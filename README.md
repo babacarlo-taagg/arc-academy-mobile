@@ -32,5 +32,15 @@ Le module `arc_mobile_api` doit être installé sur le serveur.
 flutter test                                   # tous les tests
 flutter test --tags captures --update-goldens  # refaire les captures de docs/captures
 ```
+
+**Essai de bout en bout avec le vrai Odoo** (base de démonstration de `arc-academy-odoo`,
+`scripts/preparer_base_demo_mobile.py`, code de test 123456) :
+```bash
+ARC_E2E_URL=http://127.0.0.1:8069/api/v1 flutter test test/e2e
+```
+Connexion par code, téléchargement du cours coupé au milieu puis repris, article et PDF lus sans le serveur, module
+SCORM joué deux fois dans Chromium (reprise à la bonne page), envoi de la progression dont la réponse se perd,
+puis vérification côté Odoo : tout est compté une fois, score 80, reprise disponible pour un autre téléphone.
+À lancer sur une base fraîche (l'apprenante `awa.demo` ne doit pas avoir déjà avancé).
 À chaque envoi sur GitHub, l'intégration continue lance aussi : la construction des APK (avec leur taille), le parcours
 sur un émulateur Android 9 bas de gamme au réseau lent (avec captures), et la compilation iOS.
