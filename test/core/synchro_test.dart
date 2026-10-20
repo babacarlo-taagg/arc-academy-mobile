@@ -218,8 +218,12 @@ void main() {
     expect(etat.estTermine, isTrue);
     final lecon = await (db.select(db.etatsLecons)..where((x) => x.leconId.equals(5))).getSingle();
     expect(lecon.terminee, isTrue);
-    // Les deux enregistrements partent quand même : le serveur applique les mêmes règles.
-    expect(await db.compterEnAttente(), 2);
+    // Un seul envoi, avec l'état fusionné (le meilleur) : économie de données.
+    final attente = await db.select(db.evenements).get();
+    expect(attente, hasLength(1));
+    expect(attente.single.donnees, contains('"successStatus":"passed"'));
+    expect(attente.single.donnees, contains('"raw":80'));
+    expect(attente.single.donnees, contains('fin'));
   });
 
   test('une leçon déjà terminée ne crée pas un second événement « terminée »', () async {

@@ -26,8 +26,8 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - name: Format
-        run: dart format -l 120 --output=none --set-exit-if-changed lib test integration_test test_driver
+      - name: Format (hors fichiers de traduction générés)
+        run: dart format -l 120 --output=none --set-exit-if-changed $(find lib test integration_test test_driver -name '*.dart' ! -path 'lib/l10n/*')
       - run: flutter analyze
       - name: Tests (sans les captures, qui dépendent du rendu des polices)
         run: flutter test --exclude-tags captures

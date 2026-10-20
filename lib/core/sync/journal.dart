@@ -147,7 +147,18 @@ class JournalApprenant {
       resultat = fusionnerScorm(garde, nouveau);
       await _ecrireEtatScorm(coursId, leconId, resultat);
       await _majLecon(coursId, leconId, ouverte: true, terminee: resultat.estTermine);
-      await _ajouterEvenement('scorm_etat', coursId, leconId, commit);
+      // On envoie l'état fusionné (le meilleur) et on retire les états plus anciens de cette leçon encore en
+      // attente : un module enregistre toutes les 30 s, inutile d'envoyer chaque étape (économie de données).
+      await (db.delete(
+        db.evenements,
+      )..where((e) => e.type.equals('scorm_etat') & e.leconId.equals(leconId) & e.essais.equals(0))).go();
+      await _ajouterEvenement('scorm_etat', coursId, leconId, {
+        'completionStatus': resultat.completionStatus,
+        'successStatus': resultat.successStatus,
+        if (resultat.scorePourcent != null) 'score': {'raw': resultat.scorePourcent, 'min': 0, 'max': 100},
+        'totalTimeSeconds': resultat.totalTimeSeconds,
+        if (resultat.cmi != null) 'runtimeData': jsonDecode(resultat.cmi!),
+      });
       if (resultat.estTermine) await _majProgression(coursId);
     });
     _apresEcriture?.call();
