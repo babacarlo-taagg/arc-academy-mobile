@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:arc_academy/core/db/base.dart';
-import 'package:drift/drift.dart' hide isNotNull;
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -54,6 +53,5 @@ void main() {
     expect(await base.compterEnAttente(), 1);
     expect(await base.surveillerEnAttente().first, 1);
     await base.close();
-    expect(Value(1).present, isTrue);
   });
 }
