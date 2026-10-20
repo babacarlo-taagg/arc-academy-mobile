@@ -1,0 +1,145 @@
+name: Appli
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: appli-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.47.7
+
+jobs:
+  analyse-et-tests:
+    name: Analyse et tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Format
+        run: dart format -l 120 --output=none --set-exit-if-changed lib test integration_test test_driver
+      - run: flutter analyze
+      - name: Tests (sans les captures, qui dépendent du rendu des polices)
+        run: flutter test --exclude-tags captures
+      - name: Contrat d'API
+        working-directory: api
+        run: npm ci && npx redocly lint openapi.yaml
+
+  apk:
+    name: APK Android (taille)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Construire (un APK par type de processeur, signature de développement)
+        run: flutter build apk --release --split-per-abi
+      - name: Taille des APK
+        run: |
+          {
+            echo "## Taille des APK (objectif : moins de 25 Mo)"
+            echo ""
+            echo "| APK | Taille |"
+            echo "|---|---|"
+            for f in build/app/outputs/flutter-apk/*-release.apk; do
+              octets=$(stat -c %s "$f")
+              echo "| $(basename "$f") | $(awk "BEGIN { printf \"%.1f Mo\", $octets/1048576 }") |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+          ls -la build/app/outputs/flutter-apk/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: build/app/outputs/flutter-apk/*-release.apk
+          retention-days: 14
+
+  emulateur:
+    name: Émulateur Android 9 bas de gamme, réseau lent
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Activer KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Serveur bouchon du contrat (port 4010)
+        working-directory: api
+        run: |
+          npm ci
+          nohup npx prism mock openapi.yaml -p 4010 -h 0.0.0.0 > ../prism.log 2>&1 &
+          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:4010/aide && break; sleep 1; done
+          curl -s http://127.0.0.1:4010/aide
+      - name: Parcours sur l'émulateur (API 28, 2 Go, réseau EDGE)
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          arch: x86_64
+          target: default
+          ram-size: 2048M
+          disk-size: 4096M
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -netspeed edge -netdelay gprs
+          disable-animations: true
+          script: flutter drive --driver=test_driver/integration_test.dart --target=integration_test/parcours_test.dart --dart-define=API_BASE_URL=http://10.0.2.2:4010
+      - name: Temps d'ouverture
+        if: always()
+        run: |
+          if [ -f build/integration_response_data.json ]; then
+            echo "## Émulateur" >> "$GITHUB_STEP_SUMMARY"
+            echo "Ouverture jusqu'au premier écran : $(cat build/integration_response_data.json)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures-emulateur
+          path: |
+            build/captures/
+            prism.log
+          retention-days: 14
+
+  ios:
+    name: iOS (compilation sans signature)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign
