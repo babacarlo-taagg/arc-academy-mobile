@@ -1,0 +1,21 @@
+extends:
+  - recommended
+rules:
+  info-license: off
+  tag-description: off
+  no-server-example.com: off
+theme:
+  openapi:
+    hideDownloadButton: true
+    theme:
+      colors:
+        primary:
+          main: '#1F5C4A'
+        success:
+          main: '#2D6B41'
+      typography:
+        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif'
+        headings:
+          fontFamily: 'Montserrat, system-ui, sans-serif'
+      sidebar:
+        backgroundColor: '#F4F6F7'

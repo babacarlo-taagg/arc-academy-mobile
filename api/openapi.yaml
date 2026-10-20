@@ -1,0 +1,705 @@
+openapi: 3.1.0
+info:
+  title: API ARC Academy — appli mobile
+  version: 0.1.0
+  summary: Contrat entre l'appli ARC Academy Mobile et la base Odoo Community d'ARC (module arc_mobile_api).
+  description: |
+    Source unique de vérité pour l'appli mobile (Flutter, Android et iOS) et pour le module Odoo `arc_mobile_api`.
+    Toute évolution commence par ce fichier, puis l'appli (`lib/core/api/`), puis le module Odoo.
+
+    **Principes**
+    - REST + JSON, toutes les routes sous `/api/v1`.
+    - **Connexion par code reçu par e-mail** (décision du 20 octobre 2026 : ni WhatsApp ni SMS). L'identifiant est
+      l'adresse e-mail du compte ARC. Le serveur rend un jeton d'accès court (1 h) et un jeton de rafraîchissement
+      lié à l'appareil, valable 90 jours et renouvelé à chaque usage : l'appli fonctionne des semaines hors ligne
+      et renouvelle sa session au premier passage réseau.
+    - Plusieurs profils sur un même téléphone : chaque profil a sa propre session (même `appareil.id`).
+    - **Contenus hors ligne** : chaque cours a un manifest (liste des leçons et de leurs fichiers, avec empreinte
+      SHA-256 et taille). Les fichiers sont servis par empreinte (`/fichiers/{empreinte}`), ne changent jamais,
+      et acceptent les reprises (`Range`). Mise à jour différentielle : l'appli ne télécharge que les empreintes
+      qu'elle n'a pas.
+    - **Synchronisation** : l'appli envoie ses événements (leçon ouverte, terminée, état SCORM, temps passé) par
+      paquets de 100 au plus, éventuellement compressés (`Content-Encoding: gzip`). Chaque événement porte un
+      identifiant unique (UUID créé sur le téléphone) gardé pour toujours par le serveur : un événement renvoyé
+      après une coupure n'est compté qu'une fois (`deja_recu`). Le serveur répond événement par événement ;
+      l'appli ne supprime un événement qu'après cette réponse.
+    - **Règles de conflit** (appliquées par le serveur, et par l'appli sur sa copie locale) : une leçon terminée
+      le reste ; « réussi » ne redevient jamais « échoué » ; le meilleur score gagne ; l'état SCORM gardé pour la
+      reprise est le plus avancé (à égalité, le plus récent) ; le temps passé s'additionne.
+    - Effacement à distance : quand ARC marque un appareil ou un profil à effacer, le serveur répond
+      `401 profil_efface` ; l'appli efface alors toutes les données de ce profil sur le téléphone.
+    - Erreurs au format `application/problem+json` (RFC 9457) avec un `code` stable que l'appli traduit.
+    - Identifiants des cours et leçons : les identifiants Odoo (`slide.channel`, `slide.slide`), déjà visibles
+      dans les adresses du site ; l'accès est toujours vérifié côté serveur (cohortes et inscriptions).
+  contact:
+    name: ARC Academy
+servers:
+  - url: http://localhost:4010
+    description: Serveur bouchon local (Prism sert les routes à la racine, sans /api/v1)
+  - url: https://2-28-114-138.sslip.io/api/v1
+    description: Base ARC Academy (module Odoo arc_mobile_api)
+security:
+  - jeton: []
+tags:
+  - name: Authentification
+  - name: Profil
+  - name: Formations
+  - name: Fichiers
+  - name: Synchronisation
+  - name: Aide
+
+paths:
+  # ───────────────────────── Authentification ─────────────────────────
+  /auth/code:
+    post:
+      tags: [Authentification]
+      operationId: demanderCode
+      summary: Recevoir un code de connexion par e-mail
+      description: |
+        Envoie un code à 6 chiffres, valable 10 minutes, à l'adresse e-mail donnée si elle correspond à un compte
+        ARC actif. La réponse est **la même que l'adresse soit connue ou non** (personne ne peut savoir qui a un
+        compte) : l'appli affiche « Si cette adresse est connue d'ARC, un code vient d'y être envoyé ».
+        3 demandes par adresse et par quart d'heure au plus (`429`).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DemandeCode' }
+            example: { email: awa.diop@example.org }
+      responses:
+        '202':
+          description: Demande prise en compte.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CodeEnvoye' }
+              example: { emailMasque: a•••@example.org, expireDans: 600, renvoiPossibleDans: 45 }
+        '400': { $ref: '#/components/responses/Invalide' }
+        '429': { $ref: '#/components/responses/TropDeRequetes' }
+
+  /auth/verification:
+    post:
+      tags: [Authentification]
+      operationId: verifierCode
+      summary: Ouvrir une session avec le code reçu
+      description: 5 essais par code au plus ; ensuite il faut demander un nouveau code.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VerificationCode' }
+            example:
+              email: awa.diop@example.org
+              code: '123456'
+              appareil: { id: 7c9e6679-7425-40de-944b-e07fc1f90ae7, plateforme: android, modele: itel A70, versionAppli: 0.1.0 }
+      responses:
+        '200':
+          description: Session ouverte.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '400': { $ref: '#/components/responses/Invalide' }
+        '401':
+          description: "`code_invalide` (avec `essaisRestants`) ou `code_expire`."
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Probleme' }
+              example: { type: about:blank, title: Code incorrect, status: 401, code: code_invalide, essaisRestants: 3 }
+        '429': { $ref: '#/components/responses/TropDeRequetes' }
+
+  /auth/rafraichir:
+    post:
+      tags: [Authentification]
+      operationId: rafraichirSession
+      summary: Renouveler la session
+      description: |
+        Le jeton de rafraîchissement fourni est invalidé et remplacé (rotation). Répond `401 profil_efface` si ARC a
+        demandé l'effacement de ce profil sur cet appareil : l'appli efface alors les données du profil.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jetonRafraichissement, appareilId]
+              properties:
+                jetonRafraichissement: { type: string }
+                appareilId: { type: string, format: uuid }
+            example: { jetonRafraichissement: rt_exemple_opaque, appareilId: 7c9e6679-7425-40de-944b-e07fc1f90ae7 }
+      responses:
+        '200':
+          description: Nouvelle paire de jetons.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '400': { $ref: '#/components/responses/Invalide' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  /auth/deconnexion:
+    post:
+      tags: [Authentification]
+      operationId: seDeconnecter
+      summary: Fermer la session de ce profil sur cet appareil
+      responses:
+        '204': { description: Session fermée. }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  # ───────────────────────── Profil ─────────────────────────
+  /moi:
+    get:
+      tags: [Profil]
+      operationId: lireMoi
+      summary: Mon profil
+      responses:
+        '200':
+          description: Profil de l'apprenant connecté.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Apprenant' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  # ───────────────────────── Formations ─────────────────────────
+  /formations:
+    get:
+      tags: [Formations]
+      operationId: listerFormations
+      summary: Mes formations
+      description: |
+        Les cours publiés des cohortes de l'apprenant, et ceux où il est inscrit. Pour chacun : progression et
+        taille à télécharger pour le hors-ligne (somme des fichiers du manifest).
+      responses:
+        '200':
+          description: Liste des formations.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [formations]
+                properties:
+                  formations:
+                    type: array
+                    items: { $ref: '#/components/schemas/Formation' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  /formations/{coursId}/manifest:
+    get:
+      tags: [Formations]
+      operationId: lireManifest
+      summary: Manifest d'un cours pour le hors-ligne
+      description: |
+        Leçons du cours dans l'ordre, et pour chacune les fichiers à télécharger (empreinte SHA-256, taille).
+        `version` change dès qu'une leçon ou un fichier change ; l'en-tête `ETag` vaut `version`, et une requête
+        avec `If-None-Match` égal à la version locale reçoit `304`.
+        Étape 1 : articles, PDF et SCORM sont disponibles hors ligne ; vidéos, quiz et certifications ont
+        `horsLigne: false` et s'ouvrent en ligne (`urlEnLigne`).
+      parameters:
+        - $ref: '#/components/parameters/Cours'
+        - name: If-None-Match
+          in: header
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Manifest.
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Manifest' }
+        '304': { description: La version locale est à jour. }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+        '404': { $ref: '#/components/responses/Introuvable' }
+
+  # ───────────────────────── Fichiers ─────────────────────────
+  /fichiers/{empreinte}:
+    get:
+      tags: [Fichiers]
+      operationId: telechargerFichier
+      summary: Télécharger un fichier de cours (reprise possible)
+      description: |
+        Fichier désigné par son empreinte SHA-256 (64 caractères hexadécimaux), servi seulement s'il appartient à
+        un cours accessible à l'apprenant. Le contenu ne change jamais (`Cache-Control: immutable`). L'en-tête
+        `Range: bytes=N-` permet de reprendre un téléchargement coupé (`206`).
+      parameters:
+        - name: empreinte
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[0-9a-f]{64}$' }
+        - name: Range
+          in: header
+          required: false
+          schema: { type: string, example: bytes=1048576- }
+      responses:
+        '200':
+          description: Fichier complet.
+          headers:
+            ETag: { schema: { type: string } }
+            Accept-Ranges: { schema: { type: string, enum: [bytes] } }
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '206':
+          description: Partie du fichier demandée par `Range`.
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+        '404': { $ref: '#/components/responses/Introuvable' }
+
+  # ───────────────────────── Synchronisation ─────────────────────────
+  /sync/evenements:
+    post:
+      tags: [Synchronisation]
+      operationId: envoyerEvenements
+      summary: Envoyer les événements en attente
+      description: |
+        100 événements au plus par appel. Le corps peut être compressé (`Content-Encoding: gzip`).
+        Chaque événement reçoit son résultat : `accepte` (appliqué), `deja_recu` (même identifiant déjà reçu : rien
+        n'est refait) ou `refuse` (définitivement : leçon inconnue, accès retiré, données invalides ; l'appli le
+        retire de sa file). En cas d'erreur réseau, l'appli renvoie le même paquet plus tard.
+        La réponse donne l'état à jour des cours concernés.
+      parameters:
+        - name: Content-Encoding
+          in: header
+          required: false
+          schema: { type: string, enum: [gzip] }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PaquetEvenements' }
+            example:
+              appareilId: 7c9e6679-7425-40de-944b-e07fc1f90ae7
+              evenements:
+                - id: 0b8f3a3e-8a1c-4c1e-9a52-6f1d2d3c4b5a
+                  type: scorm_etat
+                  coursId: 12
+                  leconId: 345
+                  survenuLe: '2026-10-21T09:14:00Z'
+                  donnees:
+                    completionStatus: completed
+                    successStatus: passed
+                    score: { raw: 80, min: 0, max: 100 }
+                    totalTimeSeconds: 1260
+                    runtimeData: { cmi: { suspend_data: vu=1,2,3, core: { lesson_location: page-3 } } }
+                - id: 3d6f8c1a-2b4e-4f6a-8c9d-0e1f2a3b4c5d
+                  type: temps_passe
+                  coursId: 12
+                  leconId: 346
+                  survenuLe: '2026-10-21T09:40:00Z'
+                  donnees: { secondes: 420 }
+      responses:
+        '200':
+          description: Résultat par événement et état à jour.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResultatSynchro' }
+        '400': { $ref: '#/components/responses/Invalide' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+        '413':
+          description: Plus de 100 événements, ou corps trop gros (plus de 2 Mo une fois décompressé).
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Probleme' }
+
+  /sync/etat:
+    get:
+      tags: [Synchronisation]
+      operationId: lireEtat
+      summary: État de ma progression côté serveur
+      description: |
+        Progression de chaque cours et état de chaque leçon. Sert au premier lancement sur un nouveau téléphone
+        et quand l'apprenant a aussi avancé sur le site. Avec `coursId`, l'état SCORM complet (cmi) des leçons de
+        ce cours est inclus, pour reprendre là où l'apprenant s'était arrêté.
+      parameters:
+        - name: coursId
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        '200':
+          description: État.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EtatSynchro' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+        '404': { $ref: '#/components/responses/Introuvable' }
+
+  # ───────────────────────── Aide ─────────────────────────
+  /aide:
+    get:
+      tags: [Aide]
+      operationId: lireAide
+      summary: Comment joindre ARC (sans jeton)
+      security: []
+      responses:
+        '200':
+          description: Coordonnées du support.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aide' }
+
+components:
+  securitySchemes:
+    jeton:
+      type: http
+      scheme: bearer
+      description: Jeton d'accès d'une heure rendu par `verifierCode` ou `rafraichirSession`.
+
+  parameters:
+    Cours:
+      name: coursId
+      in: path
+      required: true
+      schema: { type: integer }
+
+  responses:
+    Invalide:
+      description: Requête invalide.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Probleme' }
+          example: { type: about:blank, title: Données invalides, status: 400, code: champ_invalide, champs: { email: obligatoire } }
+    NonAuthentifie:
+      description: Jeton absent, expiré ou révoqué ; ou profil à effacer (`profil_efface`).
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Probleme' }
+          example: { type: about:blank, title: Session expirée, status: 401, code: jeton_expire }
+    Introuvable:
+      description: Ressource introuvable ou non accessible.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Probleme' }
+          example: { type: about:blank, title: Introuvable, status: 404, code: introuvable }
+    TropDeRequetes:
+      description: Trop de demandes ; réessayer plus tard.
+      headers:
+        Retry-After: { schema: { type: integer } }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Probleme' }
+          example: { type: about:blank, title: Trop de demandes, status: 429, code: trop_de_demandes }
+
+  schemas:
+    Probleme:
+      type: object
+      description: Erreur au format RFC 9457, avec un `code` stable.
+      required: [title, status, code]
+      properties:
+        type: { type: string, default: about:blank }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code:
+          type: string
+          description: Code stable traduit par l'appli.
+          examples: [champ_invalide, json_invalide, code_invalide, code_expire, jeton_absent, jeton_expire, session_revoquee, profil_efface, introuvable, trop_de_demandes, trop_d_evenements]
+        champs:
+          type: object
+          additionalProperties: { type: string }
+        essaisRestants: { type: integer }
+      additionalProperties: true
+
+    DemandeCode:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+    CodeEnvoye:
+      type: object
+      required: [emailMasque, expireDans, renvoiPossibleDans]
+      properties:
+        emailMasque: { type: string, description: Adresse en partie masquée (a•••@example.org). }
+        expireDans: { type: integer, description: Secondes. }
+        renvoiPossibleDans: { type: integer, description: Secondes. }
+    Appareil:
+      type: object
+      required: [id, plateforme]
+      properties:
+        id: { type: string, format: uuid, description: "Créé par l'appli à l'installation, commun à tous les profils du téléphone." }
+        plateforme: { type: string, enum: [android, ios] }
+        modele: { type: string, maxLength: 120 }
+        versionAppli: { type: string, maxLength: 20 }
+    VerificationCode:
+      type: object
+      required: [email, code, appareil]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        code: { type: string, pattern: '^[0-9]{6}$' }
+        appareil: { $ref: '#/components/schemas/Appareil' }
+    Session:
+      type: object
+      required: [jetonAcces, expireDans, jetonRafraichissement, apprenant]
+      properties:
+        jetonAcces: { type: string }
+        expireDans: { type: integer, description: "Durée de vie du jeton d'accès, en secondes." }
+        jetonRafraichissement: { type: string, description: "Valable 90 jours, remplacé à chaque usage." }
+        apprenant: { $ref: '#/components/schemas/Apprenant' }
+      example:
+        jetonAcces: at_exemple_opaque
+        expireDans: 3600
+        jetonRafraichissement: rt_exemple_opaque
+        apprenant: { id: 42, nom: Awa Diop, email: awa.diop@example.org, roles: [apprenant], langue: fr }
+    Apprenant:
+      type: object
+      required: [id, nom, email, roles]
+      properties:
+        id: { type: integer, description: Identifiant du contact (res.partner). }
+        nom: { type: string }
+        email: { type: string }
+        roles:
+          type: array
+          description: "`tuteur` : tuteur, référent ou responsable d'au moins une cohorte (espace tuteur, étape 4)."
+          items: { type: string, enum: [apprenant, tuteur] }
+        langue: { type: string, enum: [fr, wo], default: fr }
+      example: { id: 42, nom: Awa Diop, email: awa.diop@example.org, roles: [apprenant], langue: fr }
+
+    Formation:
+      type: object
+      required: [id, titre, nbLecons, nbLeconsTerminees, progression, version, tailleTelechargement]
+      properties:
+        id: { type: integer }
+        titre: { type: string }
+        resume: { type: string, description: "Texte court, sans balises." }
+        imageUrl: { type: [string, 'null'], description: "Image du cours (chemin absolu sur le serveur), à télécharger une fois." }
+        cohortes:
+          type: array
+          items:
+            type: object
+            required: [id, nom]
+            properties:
+              id: { type: integer }
+              nom: { type: string }
+        tuteurs:
+          type: array
+          items:
+            type: object
+            required: [nom]
+            properties:
+              nom: { type: string }
+        nbLecons: { type: integer }
+        nbLeconsTerminees: { type: integer }
+        progression: { type: integer, minimum: 0, maximum: 100 }
+        version: { type: string, description: "Version du manifest ; si elle diffère de la version téléchargée, une mise à jour existe." }
+        tailleTelechargement: { type: integer, description: Octets à télécharger pour tout le cours hors ligne. }
+        derniereActivite: { type: [string, 'null'], format: date-time }
+      example:
+        id: 12
+        titre: Certificat de Praticien en Pharmacovigilance
+        resume: Repérer, notifier et suivre les effets indésirables des médicaments.
+        imageUrl: /web/image/slide.channel/12/image_512
+        cohortes: [{ id: 3, nom: PV-2026-Kolda }]
+        tuteurs: [{ nom: Dr Fatou Ndiaye }]
+        nbLecons: 17
+        nbLeconsTerminees: 5
+        progression: 29
+        version: 9f2c4e1a7b
+        tailleTelechargement: 18432000
+        derniereActivite: '2026-10-19T18:02:00Z'
+
+    Fichier:
+      type: object
+      required: [chemin, empreinte, taille, typeMime]
+      properties:
+        chemin: { type: string, description: "Nom du fichier dans le dossier de la leçon (index.html, img/1.webp, document.pdf, paquet.zip)." }
+        empreinte: { type: string, pattern: '^[0-9a-f]{64}$', description: SHA-256 du contenu. }
+        taille: { type: integer }
+        typeMime: { type: string }
+    Lecon:
+      type: object
+      required: [id, titre, type, ordre, horsLigne, terminee, fichiers]
+      properties:
+        id: { type: integer }
+        titre: { type: string }
+        type: { type: string, enum: [article, pdf, video, scorm, quiz, certification, autre] }
+        section: { type: [string, 'null'], description: Titre de la section qui contient la leçon. }
+        ordre: { type: integer }
+        dureeMinutes: { type: integer }
+        horsLigne: { type: boolean, description: Vrai si tous les fichiers nécessaires sont dans `fichiers`. }
+        terminee: { type: boolean, description: État côté serveur au moment du manifest. }
+        fichiers:
+          type: array
+          items: { $ref: '#/components/schemas/Fichier' }
+        entree: { type: [string, 'null'], description: "Fichier à ouvrir : `index.html` (article), `document.pdf` (PDF), page de lancement à l'intérieur de `paquet.zip` (SCORM)." }
+        scormVersion: { type: [string, 'null'], enum: ['1.2', '2004', null] }
+        urlEnLigne: { type: [string, 'null'], description: Adresse de la leçon sur le site (repli en ligne). }
+    Manifest:
+      type: object
+      required: [coursId, version, titre, tailleTotale, lecons]
+      properties:
+        coursId: { type: integer }
+        version: { type: string }
+        titre: { type: string }
+        genereLe: { type: string, format: date-time }
+        tailleTotale: { type: integer, description: Somme des tailles des fichiers distincts. }
+        lecons:
+          type: array
+          items: { $ref: '#/components/schemas/Lecon' }
+      example:
+        coursId: 12
+        version: 9f2c4e1a7b
+        titre: Certificat de Praticien en Pharmacovigilance
+        genereLe: '2026-10-21T08:00:00Z'
+        tailleTotale: 2457600
+        lecons:
+          - id: 344
+            titre: Qu'est-ce que la pharmacovigilance ?
+            type: article
+            section: Module 1 — Les bases
+            ordre: 1
+            dureeMinutes: 10
+            horsLigne: true
+            terminee: true
+            entree: index.html
+            fichiers:
+              - { chemin: index.html, empreinte: 2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae, taille: 18200, typeMime: text/html }
+              - { chemin: img/1.webp, empreinte: fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9, taille: 42100, typeMime: image/webp }
+          - id: 345
+            titre: Notifier un effet indésirable (module interactif)
+            type: scorm
+            section: Module 1 — Les bases
+            ordre: 2
+            dureeMinutes: 25
+            horsLigne: true
+            terminee: false
+            entree: story.html
+            scormVersion: '1.2'
+            fichiers:
+              - { chemin: paquet.zip, empreinte: baa5a0964d3320fbc0c6a922140453c8513ea24ab8fd0577034804a967248096, taille: 2397300, typeMime: application/zip }
+          - id: 346
+            titre: Fiche de notification nationale
+            type: pdf
+            section: Module 1 — Les bases
+            ordre: 3
+            dureeMinutes: 5
+            horsLigne: true
+            terminee: false
+            entree: document.pdf
+            fichiers:
+              - { chemin: document.pdf, empreinte: 9c56cc51b374c3ba189210d5b6d4bf57790d351c96c47c02190ecf1e430635ab, taille: 318000, typeMime: application/pdf }
+
+    TypeEvenement:
+      type: string
+      enum: [lecon_ouverte, lecon_terminee, scorm_etat, temps_passe]
+      description: |
+        - `lecon_ouverte` : `donnees` vide.
+        - `lecon_terminee` : `donnees` vide (articles et PDF ; un SCORM se termine par son état).
+        - `scorm_etat` : objet `EtatScorm` (format « commit » de scorm-again).
+        - `temps_passe` : `{ secondes }`, temps passé dans la leçon depuis le dernier événement de ce type.
+    EtatScorm:
+      type: object
+      properties:
+        completionStatus: { type: string, enum: [unknown, incomplete, completed] }
+        successStatus: { type: string, enum: [unknown, passed, failed] }
+        score:
+          type: object
+          properties:
+            raw: { type: number }
+            min: { type: number }
+            max: { type: number }
+        totalTimeSeconds: { type: number }
+        runtimeData: { type: object, description: "État cmi complet, pour la reprise." }
+    Evenement:
+      type: object
+      required: [id, type, coursId, leconId, survenuLe]
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/TypeEvenement' }
+        coursId: { type: integer }
+        leconId: { type: integer }
+        survenuLe: { type: string, format: date-time, description: Heure du téléphone (peut être fausse ; le serveur note aussi l'heure de réception). }
+        donnees:
+          description: Vide, `{ secondes }` (temps_passe) ou état SCORM (scorm_etat).
+          allOf:
+            - $ref: '#/components/schemas/EtatScorm'
+          additionalProperties: true
+    PaquetEvenements:
+      type: object
+      required: [appareilId, evenements]
+      properties:
+        appareilId: { type: string, format: uuid }
+        evenements:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items: { $ref: '#/components/schemas/Evenement' }
+    ResultatEvenement:
+      type: object
+      required: [id, statut]
+      properties:
+        id: { type: string, format: uuid }
+        statut: { type: string, enum: [accepte, deja_recu, refuse] }
+        raison: { type: string, description: "Si refusé : `lecon_inconnue`, `acces_retire`, `donnees_invalides`, `type_inconnu`." }
+    ResultatSynchro:
+      type: object
+      required: [resultats, etat]
+      properties:
+        resultats:
+          type: array
+          items: { $ref: '#/components/schemas/ResultatEvenement' }
+        etat: { $ref: '#/components/schemas/EtatSynchro' }
+      example:
+        resultats:
+          - { id: 0b8f3a3e-8a1c-4c1e-9a52-6f1d2d3c4b5a, statut: accepte }
+          - { id: 3d6f8c1a-2b4e-4f6a-8c9d-0e1f2a3b4c5d, statut: deja_recu }
+        etat:
+          genereLe: '2026-10-21T10:00:05Z'
+          formations:
+            - coursId: 12
+              progression: 35
+              lecons:
+                - { leconId: 344, terminee: true }
+                - { leconId: 345, terminee: true, scorm: { completionStatus: completed, successStatus: passed, scorePourcent: 80 } }
+
+    EtatLecon:
+      type: object
+      required: [leconId, terminee]
+      properties:
+        leconId: { type: integer }
+        terminee: { type: boolean }
+        scorm:
+          type: object
+          properties:
+            completionStatus: { type: string, enum: [unknown, incomplete, completed] }
+            successStatus: { type: string, enum: [unknown, passed, failed] }
+            scorePourcent: { type: [number, 'null'] }
+            totalTimeSeconds: { type: integer }
+            runtimeData: { type: object, description: Seulement si `coursId` est demandé. }
+    EtatFormation:
+      type: object
+      required: [coursId, progression, lecons]
+      properties:
+        coursId: { type: integer }
+        progression: { type: integer, minimum: 0, maximum: 100 }
+        lecons:
+          type: array
+          items: { $ref: '#/components/schemas/EtatLecon' }
+    EtatSynchro:
+      type: object
+      required: [genereLe, formations]
+      properties:
+        genereLe: { type: string, format: date-time }
+        formations:
+          type: array
+          items: { $ref: '#/components/schemas/EtatFormation' }
+      example:
+        genereLe: '2026-10-21T10:00:05Z'
+        formations:
+          - coursId: 12
+            progression: 35
+            lecons:
+              - { leconId: 344, terminee: true }
+              - { leconId: 345, terminee: false, scorm: { completionStatus: incomplete, successStatus: unknown, scorePourcent: null, totalTimeSeconds: 600 } }
+
+    Aide:
+      type: object
+      required: [emailSupport]
+      properties:
+        emailSupport: { type: string }
+        messageSansEmail: { type: string, description: "Texte affiché à qui n'a pas d'e-mail sur son compte." }
+      example:
+        emailSupport: academy@africaresourcecentre.org
+        messageSansEmail: Ton adresse e-mail n'est pas encore enregistrée. Demande à ton responsable de formation de l'ajouter à ton compte ARC.

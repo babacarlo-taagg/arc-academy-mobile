@@ -1,0 +1,16 @@
+{
+  "name": "arc-academy-api-contrat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contrat OpenAPI de l'appli ARC Academy Mobile et serveur bouchon",
+  "scripts": {
+    "bouchon": "prism mock openapi.yaml -p 4010 -h 0.0.0.0",
+    "bouchon:dynamique": "prism mock openapi.yaml -p 4010 -h 0.0.0.0 --dynamic",
+    "verifier": "redocly lint openapi.yaml",
+    "doc": "redocly build-docs openapi.yaml -o doc/index.html"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.25.0",
+    "@stoplight/prism-cli": "^5.12.0"
+  }
+}
