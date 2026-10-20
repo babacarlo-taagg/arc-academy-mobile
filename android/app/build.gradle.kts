@@ -31,17 +31,8 @@ android {
     buildTypes {
         release {
             // Signature de développement en attendant la clé de publication (jamais dans le dépôt).
+            // R8 essayé le 20 octobre : aucun gain (l'APK est fait surtout de bibliothèques natives), retiré.
             signingConfig = signingConfigs.getByName("debug")
-            // Appli plus petite : code et ressources inutilisés retirés (R8).
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-        }
-        getByName("profile") {
-            // Même réduction qu'en publication, pour que l'essai sur émulateur (mode profile) la vérifie.
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
