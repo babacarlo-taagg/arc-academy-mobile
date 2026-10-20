@@ -41,9 +41,11 @@ void main() {
     await attendre(tester, find.text('Choisis ton code secret'));
     for (final pin in ['1357', '1357']) {
       for (final c in pin.split('')) {
+        await tester.ensureVisible(find.text(c).last);
         await tester.tap(find.text(c).last);
         await tester.pump();
       }
+      await tester.ensureVisible(find.byIcon(Icons.check_rounded));
       await tester.tap(find.byIcon(Icons.check_rounded));
       await tester.pump(const Duration(seconds: 1));
     }
@@ -59,7 +61,7 @@ void main() {
     await tester.pump(const Duration(seconds: 8));
     await capture(tester, '05_telechargement');
 
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton));
     await attendre(tester, find.byKey(const Key('bouton_reglages')));
     await tester.tap(find.byKey(const Key('bouton_reglages')));
     await attendre(tester, find.byKey(const Key('donnees_consommees')));

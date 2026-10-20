@@ -102,6 +102,7 @@ Future<void> attendre(WidgetTester tester, {int fois = 6}) async {
 
 Future<void> taperPin(WidgetTester tester, String pin) async {
   for (final c in pin.split('')) {
+    await tester.ensureVisible(find.text(c).last);
     await tester.tap(find.text(c).last);
     await tester.pump();
   }

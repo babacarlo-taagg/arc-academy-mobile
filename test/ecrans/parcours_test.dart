@@ -78,13 +78,14 @@ void main() {
   testWidgets('téléphone partagé : choix du profil puis code secret, mauvais code refusé', (tester) async {
     await chargerPolices();
     final services = servicesDeTest(dossier, serveur.url);
+    // Petit téléphone (320 points de large) : rien ne doit déborder.
     await tester.runAsync(() async {
       for (final (id, nom) in [(1, 'Awa Diop'), (2, 'Moussa Ba')]) {
         final p = await services.profils.ouvrirSession(sessionDeTest(id, nom));
         await services.profils.definirPin(p.id, '1234');
       }
     });
-    final conteneur = await lancerAppli(tester, services);
+    final conteneur = await lancerAppli(tester, services, taille: const Size(320, 640));
     expect(find.text('Qui apprend ?'), findsOneWidget);
     expect(find.text('Moussa Ba'), findsOneWidget);
 
@@ -92,11 +93,13 @@ void main() {
     await attendre(tester);
     expect(find.text('Bonjour Moussa'), findsOneWidget);
     await taperPin(tester, '9999');
+    await tester.ensureVisible(find.byIcon(Icons.check_rounded));
     await tester.tap(find.byIcon(Icons.check_rounded));
     await attendre(tester, fois: 10);
     expect(find.textContaining('Code secret incorrect'), findsOneWidget);
 
     await taperPin(tester, '1234');
+    await tester.ensureVisible(find.byIcon(Icons.check_rounded));
     await tester.tap(find.byIcon(Icons.check_rounded));
     await attendre(tester, fois: 15);
     expect(find.text('Mes formations'), findsOneWidget);
@@ -118,6 +121,7 @@ void main() {
     await tester.tap(find.byKey(Key('profil_$id')));
     await attendre(tester);
     await taperPin(tester, '1234');
+    await tester.ensureVisible(find.byIcon(Icons.check_rounded));
     await tester.tap(find.byIcon(Icons.check_rounded));
     await attendre(tester, fois: 15);
     final ouvert = conteneur.read(profilOuvertProvider)!;

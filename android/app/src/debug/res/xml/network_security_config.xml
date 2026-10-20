@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Version de développement : autorise aussi le serveur bouchon de l'ordinateur vu depuis l'émulateur. -->
+<!-- Versions de développement et d’essai (profile) : autorise aussi le serveur bouchon de l'ordinateur vu depuis l'émulateur. -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
     <domain-config cleartextTrafficPermitted="true">

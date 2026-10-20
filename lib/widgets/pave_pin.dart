@@ -33,12 +33,17 @@ class PavePinState extends State<PavePin> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      LayoutBuilder(builder: (context, contraintes) => _pave(context, contraintes.maxWidth));
+
+  Widget _pave(BuildContext context, double largeurDispo) {
     final t = AppLocalizations.of(context);
+    // Petits écrans (4 pouces, 320 points de large) : les touches rétrécissent au lieu de déborder.
+    final largeur = largeurDispo.isFinite ? ((largeurDispo / 3) - 12).clamp(56.0, 84.0) : 84.0;
     Widget touche(String libelle, {VoidCallback? onTap, Widget? enfant, String? semantique}) => Padding(
       padding: const EdgeInsets.all(6),
       child: SizedBox(
-        width: 84,
+        width: largeur,
         height: 64,
         child: Semantics(
           button: true,
