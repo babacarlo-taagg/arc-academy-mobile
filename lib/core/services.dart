@@ -64,6 +64,7 @@ class Services {
     this.placeLibre,
     this.adaptateur,
     this.plateforme = 'android',
+    this.basesEnArrierePlan = true,
   });
 
   final CoffreFort coffre;
@@ -79,6 +80,9 @@ class Services {
   /// Adaptateur HTTP (remplacé dans les tests).
   final HttpClientAdapter? adaptateur;
   final String plateforme;
+
+  /// Bases ouvertes dans un isolat à part (l'écran reste fluide). Désactivé dans les tests d'écrans.
+  final bool basesEnArrierePlan;
 
   /// Client sans session : demander un code, ouvrir une session, aide.
   late final ApiClient apiPublic = ApiClient(
@@ -132,14 +136,14 @@ class Services {
   /// Ouvre la base et les outils d'un profil (après le PIN, ou en tâche de fond).
   Future<ProfilOuvert> ouvrirProfil(
     Profil profil, {
-    bool enArrierePlan = true,
+    bool? enArrierePlan,
     Future<void> Function()? surEffacement,
     Future<void> Function()? surSessionFermee,
   }) async {
     final cle = await profils.cleBase(profil.id);
     if (cle == null) throw StateError('Clé du profil introuvable');
     await dossierBases.create(recursive: true);
-    final db = BaseProfil.ouvrir(fichierBase(profil.id), cle, enArrierePlan: enArrierePlan);
+    final db = BaseProfil.ouvrir(fichierBase(profil.id), cle, enArrierePlan: enArrierePlan ?? basesEnArrierePlan);
     final jetons = JetonsProfil(profils, profil.id);
     final journal = JournalApprenant(db);
     late final ProfilOuvert ouvert;
