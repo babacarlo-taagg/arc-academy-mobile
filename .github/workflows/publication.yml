@@ -1,0 +1,234 @@
+name: Publication
+
+# Version de production (serveur ARC) : AAB + APK Android et, si demandé, envoi au test interne Google Play et à
+# TestFlight. Sans les secrets de signature, tout se construit quand même (signature de développement, sans envoi).
+# Mode d'emploi : docs/publication.md
+
+on:
+  push:
+    branches: [main, claude/awesome-pasteur-onk06u]
+  workflow_dispatch:
+    inputs:
+      envoyer_play:
+        description: Envoyer l'AAB au test interne Google Play
+        type: boolean
+        default: false
+      envoyer_testflight:
+        description: Envoyer la version iOS à TestFlight
+        type: boolean
+        default: false
+
+concurrency:
+  group: publication-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FLUTTER_VERSION: 3.47.7
+  API_PRODUCTION: https://academy.africaresourcecentre.org/api/v1
+  ID_APPLI: org.africaresourcecentre.academy
+
+jobs:
+  android:
+    name: Android (AAB et APK de production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+
+      - name: Numéro de version
+        id: version
+        run: |
+          nom=$(grep '^version:' pubspec.yaml | sed -E 's/version: *//; s/\+.*//')
+          echo "nom=$nom" >> "$GITHUB_OUTPUT"
+          echo "numero=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "Version $nom (${{ github.run_number }})"
+
+      - name: Clé de publication (depuis les secrets)
+        id: cle
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ] && [ -n "$KEYSTORE_PASSWORD" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASSWORD" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
+            {
+              echo "storeFile=upload-keystore.jks"
+              echo "storePassword=$KEYSTORE_PASSWORD"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "keyPassword=$KEY_PASSWORD"
+            } > android/key.properties
+            echo "signee=oui" >> "$GITHUB_OUTPUT"
+          else
+            echo "signee=non" >> "$GITHUB_OUTPUT"
+            echo "::warning::Secrets de signature absents : signature de développement (pilote hors store seulement)."
+          fi
+
+      - name: Construire l'AAB (Google Play)
+        run: >
+          flutter build appbundle --release
+          --dart-define=API_BASE_URL=$API_PRODUCTION
+          --build-name=${{ steps.version.outputs.nom }} --build-number=${{ steps.version.outputs.numero }}
+
+      - name: Construire les APK (pilote hors store, un par type de processeur)
+        run: >
+          flutter build apk --release --split-per-abi
+          --dart-define=API_BASE_URL=$API_PRODUCTION
+          --build-name=${{ steps.version.outputs.nom }} --build-number=${{ steps.version.outputs.numero }}
+
+      - name: Résumé
+        run: |
+          taille() { awk "BEGIN { printf \"%.1f Mo\", $(stat -c %s "$1")/1048576 }"; }
+          {
+            echo "## Android — version ${{ steps.version.outputs.nom }} (${{ steps.version.outputs.numero }})"
+            echo ""
+            echo "Serveur : \`$API_PRODUCTION\`"
+            echo ""
+            if [ "${{ steps.cle.outputs.signee }}" = "oui" ]; then
+              echo "Signature : **clé de publication ARC** (prêt pour Google Play)."
+            else
+              echo "> ⚠️ Signature : **clé de développement** — les secrets \`ANDROID_KEYSTORE_*\` ne sont pas encore créés."
+              echo "> Ces fichiers servent au pilote (installation directe), pas à Google Play."
+            fi
+            echo ""
+            echo "| Fichier | Taille |"
+            echo "|---|---|"
+            echo "| app-release.aab | $(taille build/app/outputs/bundle/release/app-release.aab) |"
+            for f in build/app/outputs/flutter-apk/*-release.apk; do
+              echo "| $(basename "$f") | $(taille "$f") |"
+            done
+            echo ""
+            echo "Pour la plupart des téléphones du pilote : **app-arm64-v8a-release.apk** (sinon armeabi-v7a pour les plus anciens)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-aab-${{ steps.version.outputs.nom }}-${{ steps.version.outputs.numero }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-pilote-${{ steps.version.outputs.nom }}-${{ steps.version.outputs.numero }}
+          path: build/app/outputs/flutter-apk/*-release.apk
+          retention-days: 30
+
+      - name: Envoi au test interne Google Play
+        if: inputs.envoyer_play && env.PLAY_JSON != '' && steps.cle.outputs.signee == 'oui'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ env.ID_APPLI }}
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft
+          releaseName: ${{ steps.version.outputs.nom }} (${{ steps.version.outputs.numero }})
+
+      - name: Pourquoi rien n'a été envoyé à Google Play
+        if: inputs.envoyer_play && (env.PLAY_JSON == '' || steps.cle.outputs.signee != 'oui')
+        run: |
+          {
+            echo ""
+            echo "> ⚠️ Envoi Google Play demandé mais impossible : il faut les secrets \`ANDROID_KEYSTORE_*\` et \`PLAY_SERVICE_ACCOUNT_JSON\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Rappel (premier envoi)
+        if: inputs.envoyer_play
+        run: |
+          {
+            echo ""
+            echo "Rappel : le **tout premier** AAB doit être envoyé à la main dans Play Console (Test interne › Créer une version)."
+            echo "Les versions envoyées ici arrivent en **brouillon** : les publier dans Play Console."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  ios:
+    name: iOS (compilation, ou envoi à TestFlight)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      ASC_KEY_P8_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_P8_BASE64 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+
+      - name: Numéro de version et mode
+        id: version
+        run: |
+          echo "nom=$(grep '^version:' pubspec.yaml | sed -E 's/version: *//; s/\+.*//')" >> "$GITHUB_OUTPUT"
+          echo "numero=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ inputs.envoyer_testflight }}" = "true" ] && [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] \
+             && [ -n "$ASC_KEY_P8_BASE64" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "testflight=oui" >> "$GITHUB_OUTPUT"
+          else
+            echo "testflight=non" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compilation sans signature
+        if: steps.version.outputs.testflight != 'oui'
+        run: >
+          flutter build ios --release --no-codesign
+          --dart-define=API_BASE_URL=$API_PRODUCTION
+          --build-name=${{ steps.version.outputs.nom }} --build-number=${{ steps.version.outputs.numero }}
+
+      - name: Archive signée et envoi à TestFlight
+        if: steps.version.outputs.testflight == 'oui'
+        run: |
+          set -euo pipefail
+          cle="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$cle"
+          auth=(-allowProvisioningUpdates -authenticationKeyPath "$cle" -authenticationKeyID "$ASC_KEY_ID"
+                -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          # Réglages Flutter (serveur de production, numéro de version) sans compiler.
+          flutter build ios --release --config-only \
+            --dart-define=API_BASE_URL=$API_PRODUCTION \
+            --build-name=${{ steps.version.outputs.nom }} --build-number=${{ steps.version.outputs.numero }}
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/Runner.xcarchive \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic "${auth[@]}" archive
+          cat > build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath build/Runner.xcarchive \
+            -exportOptionsPlist build/ExportOptions.plist -exportPath build/ipa "${auth[@]}"
+          rm -f "$cle"
+
+      - name: Résumé
+        if: always()
+        run: |
+          {
+            echo "## iOS — version ${{ steps.version.outputs.nom }} (${{ steps.version.outputs.numero }})"
+            if [ "${{ steps.version.outputs.testflight }}" = "oui" ]; then
+              echo "Envoyé à **TestFlight** (traitement par Apple : 10 à 30 minutes avant de pouvoir l'installer)."
+            elif [ "${{ inputs.envoyer_testflight }}" = "true" ]; then
+              echo "> ⚠️ Envoi TestFlight demandé mais impossible : il faut les secrets \`APP_STORE_CONNECT_*\` et \`APPLE_TEAM_ID\`."
+            else
+              echo "Compilation vérifiée (sans signature, pas d'envoi)."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

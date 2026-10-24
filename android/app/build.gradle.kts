@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// Clé de publication : android/key.properties, écrit par GitHub Actions à partir des secrets (jamais dans le dépôt).
+// Sans ce fichier, la version « release » est signée avec la clé de développement (essais, pilote hors store).
+val proprietesCle = Properties().apply {
+    val fichier = rootProject.file("key.properties")
+    if (fichier.exists()) fichier.inputStream().use { load(it) }
+}
+val clePublication = proprietesCle.getProperty("storeFile") != null
 
 android {
     namespace = "org.africaresourcecentre.academy"
@@ -28,11 +38,21 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (clePublication) {
+            create("release") {
+                storeFile = rootProject.file(proprietesCle.getProperty("storeFile"))
+                storePassword = proprietesCle.getProperty("storePassword")
+                keyAlias = proprietesCle.getProperty("keyAlias")
+                keyPassword = proprietesCle.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Signature de développement en attendant la clé de publication (jamais dans le dépôt).
             // R8 essayé le 20 octobre : aucun gain (l'APK est fait surtout de bibliothèques natives), retiré.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName(if (clePublication) "release" else "debug")
         }
     }
 }
