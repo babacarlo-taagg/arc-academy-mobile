@@ -22,9 +22,20 @@ Avec le bouchon, n'importe quel code à 6 chiffres est accepté.
 ## Essayer avec la base ARC
 
 ```bash
-flutter run --dart-define=API_BASE_URL=https://2-28-114-138.sslip.io/api/v1
+flutter run --dart-define=API_BASE_URL=https://academy.africaresourcecentre.org/api/v1
 ```
 Le module `arc_mobile_api` doit être installé sur le serveur.
+
+## Publier (pilote, Google Play, TestFlight)
+
+Tout se fait dans GitHub Actions (workflow « Publication ») : mode d'emploi dans `docs/publication.md`.
+
+**Icône** : quand le logo d'ARC est déposé dans `assets/marque/icone-1024.png` (carré, 1024×1024, fond plein) :
+```bash
+dart run flutter_launcher_icons
+```
+puis committer les icônes générées (`android/app/src/main/res/mipmap-*`, `ios/Runner/Assets.xcassets/AppIcon.appiconset`).
+Réglages dans `flutter_launcher_icons.yaml`.
 
 ## Tests
 
