@@ -129,5 +129,22 @@
   "reglagesVersion": "Version {version}",
   "@reglagesVersion": { "placeholders": { "version": { "type": "String" } } },
   "sessionAReprendre": "Reconnecte-toi avec ton e-mail pour envoyer ta progression. Tu peux continuer à apprendre en attendant.",
-  "profilEfface": "Ce profil a été retiré de ce téléphone à la demande d'ARC."
+  "profilEfface": "Ce profil a été retiré de ce téléphone à la demande d'ARC.",
+  "reglagesSupprimer": "Supprimer mon compte",
+  "suppressionTitre": "Supprimer mon compte",
+  "suppressionExplication": "Tu demandes à ARC de supprimer ton compte et tes données. Ce qui sera supprimé :",
+  "suppressionPoint1": "ton compte ARC (tu ne pourras plus te connecter) ;",
+  "suppressionPoint2": "ta progression et tes résultats dans les formations ;",
+  "suppressionPoint3": "ce profil, sur ce téléphone et sur tes autres téléphones.",
+  "suppressionAttestations": "ARC peut garder les attestations déjà délivrées, comme le prévoit sa politique de confidentialité.",
+  "suppressionMotif": "Pourquoi ? (facultatif)",
+  "suppressionConfirmer": "Pour confirmer, tape SUPPRIMER",
+  "suppressionMotCle": "SUPPRIMER",
+  "suppressionBouton": "Supprimer mon compte",
+  "suppressionHorsLigne": "Il faut du réseau pour envoyer ta demande à ARC. Réessaie quand tu as une connexion, ou fais la demande sur le site :",
+  "suppressionLienWeb": "https://academy.africaresourcecentre.org/suppression-compte",
+  "suppressionSession": "Ta session a expiré. Reconnecte-toi avec ton e-mail, puis réessaie.",
+  "suppressionErreur": "La demande n'a pas pu être envoyée. Réessaie plus tard.",
+  "suppressionFaite": "Demande envoyée",
+  "suppressionOk": "J'ai compris"
 }

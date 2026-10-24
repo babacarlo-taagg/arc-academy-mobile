@@ -42,6 +42,9 @@ class FauxServeur {
   bool sessionRevoquee = false;
   int _numero = 1;
 
+  /// Demandes de suppression de compte reçues (motif, ou null).
+  final List<String?> suppressions = [];
+
   List<Map<String, dynamic>> formations = [];
   final Map<int, Map<String, dynamic>> manifestes = {};
   final Map<String, int> appels = {};
@@ -99,6 +102,15 @@ class FauxServeur {
       if (profilEfface) return await _probleme(r, 401, 'profil_efface');
       if (!_autorise(q)) return await _probleme(r, 401, 'jeton_expire');
       if (chemin == '/formations') return await _json(r, 200, {'formations': formations});
+      if (chemin == '/moi/suppression') {
+        final brut = await utf8.decodeStream(q);
+        final corps = brut.isEmpty ? const {} : jsonDecode(brut) as Map;
+        suppressions.add(corps['motif'] as String?);
+        return await _json(r, 202, {
+          'demandeLe': _maintenant(),
+          'message': 'Ta demande est enregistrée. ARC supprimera ton compte et tes données sous 30 jours.',
+        });
+      }
       if (chemin == '/sync/etat') return await _json(r, 200, {'genereLe': _maintenant(), 'formations': []});
       if (chemin == '/sync/evenements') return await _evenements(q);
       final manifest = RegExp(r'^/formations/(\d+)/manifest$').firstMatch(chemin);

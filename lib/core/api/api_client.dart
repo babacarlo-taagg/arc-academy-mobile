@@ -255,6 +255,18 @@ class ApiClient {
 
   Future<Apprenant> moi() async => Apprenant.fromJson(await _appel(() => dio.get<Map<String, dynamic>>('/moi')));
 
+  /// Demande de suppression du compte (jamais mise en file : elle doit être confirmée par le serveur).
+  Future<SuppressionEnregistree> demanderSuppression({String? motif}) async {
+    final m = motif?.trim() ?? '';
+    final j = await _appel(
+      () => dio.post<Map<String, dynamic>>(
+        '/moi/suppression',
+        data: {if (m.isNotEmpty) 'motif': m.length > 500 ? m.substring(0, 500) : m},
+      ),
+    );
+    return SuppressionEnregistree.fromJson(j);
+  }
+
   Future<List<Formation>> formations() async {
     final j = await _appel(() => dio.get<Map<String, dynamic>>('/formations'));
     return [

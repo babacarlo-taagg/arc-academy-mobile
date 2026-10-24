@@ -11,6 +11,7 @@ import 'features/formations/ecrans_formations.dart';
 import 'features/lecteur/ecran_lecteur.dart';
 import 'features/profils/ecrans_profils.dart';
 import 'features/reglages/ecran_reglages.dart';
+import 'features/reglages/ecran_suppression.dart';
 import 'l10n/app_localizations.dart';
 
 /// Écrans qui demandent un profil déverrouillé.
@@ -69,6 +70,7 @@ final routeurProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/reglages', builder: (_, _) => const EcranReglages()),
+      GoRoute(path: '/reglages/suppression', builder: (_, _) => const EcranSuppression()),
     ],
   );
 });

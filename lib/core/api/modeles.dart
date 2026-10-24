@@ -58,6 +58,18 @@ class CodeEnvoye {
   );
 }
 
+class SuppressionEnregistree {
+  const SuppressionEnregistree({required this.demandeLe, required this.message});
+
+  final DateTime? demandeLe;
+  final String message;
+
+  factory SuppressionEnregistree.fromJson(Map<String, dynamic> j) => SuppressionEnregistree(
+    demandeLe: DateTime.tryParse(j['demandeLe'] as String? ?? ''),
+    message: j['message'] as String? ?? '',
+  );
+}
+
 class Aide {
   const Aide({required this.emailSupport, this.messageSansEmail});
 

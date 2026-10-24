@@ -372,4 +372,58 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get profilEfface => 'Ce profil a été retiré de ce téléphone à la demande d\'ARC.';
+
+  @override
+  String get reglagesSupprimer => 'Supprimer mon compte';
+
+  @override
+  String get suppressionTitre => 'Supprimer mon compte';
+
+  @override
+  String get suppressionExplication =>
+      'Tu demandes à ARC de supprimer ton compte et tes données. Ce qui sera supprimé :';
+
+  @override
+  String get suppressionPoint1 => 'ton compte ARC (tu ne pourras plus te connecter) ;';
+
+  @override
+  String get suppressionPoint2 => 'ta progression et tes résultats dans les formations ;';
+
+  @override
+  String get suppressionPoint3 => 'ce profil, sur ce téléphone et sur tes autres téléphones.';
+
+  @override
+  String get suppressionAttestations =>
+      'ARC peut garder les attestations déjà délivrées, comme le prévoit sa politique de confidentialité.';
+
+  @override
+  String get suppressionMotif => 'Pourquoi ? (facultatif)';
+
+  @override
+  String get suppressionConfirmer => 'Pour confirmer, tape SUPPRIMER';
+
+  @override
+  String get suppressionMotCle => 'SUPPRIMER';
+
+  @override
+  String get suppressionBouton => 'Supprimer mon compte';
+
+  @override
+  String get suppressionHorsLigne =>
+      'Il faut du réseau pour envoyer ta demande à ARC. Réessaie quand tu as une connexion, ou fais la demande sur le site :';
+
+  @override
+  String get suppressionLienWeb => 'https://academy.africaresourcecentre.org/suppression-compte';
+
+  @override
+  String get suppressionSession => 'Ta session a expiré. Reconnecte-toi avec ton e-mail, puis réessaie.';
+
+  @override
+  String get suppressionErreur => 'La demande n\'a pas pu être envoyée. Réessaie plus tard.';
+
+  @override
+  String get suppressionFaite => 'Demande envoyée';
+
+  @override
+  String get suppressionOk => 'J\'ai compris';
 }

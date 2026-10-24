@@ -190,6 +190,8 @@ void main() {
     await capture(tester, '07_lecon_en_ligne');
     routeur.go('/reglages');
     await capture(tester, '08_reglages');
+    routeur.push('/reglages/suppression');
+    await capture(tester, '09_suppression_compte');
     await terminer(tester, conteneur);
   });
 }

@@ -726,6 +726,108 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Ce profil a été retiré de ce téléphone à la demande d\'ARC.'**
   String get profilEfface;
+
+  /// No description provided for @reglagesSupprimer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get reglagesSupprimer;
+
+  /// No description provided for @suppressionTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get suppressionTitre;
+
+  /// No description provided for @suppressionExplication.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu demandes à ARC de supprimer ton compte et tes données. Ce qui sera supprimé :'**
+  String get suppressionExplication;
+
+  /// No description provided for @suppressionPoint1.
+  ///
+  /// In fr, this message translates to:
+  /// **'ton compte ARC (tu ne pourras plus te connecter) ;'**
+  String get suppressionPoint1;
+
+  /// No description provided for @suppressionPoint2.
+  ///
+  /// In fr, this message translates to:
+  /// **'ta progression et tes résultats dans les formations ;'**
+  String get suppressionPoint2;
+
+  /// No description provided for @suppressionPoint3.
+  ///
+  /// In fr, this message translates to:
+  /// **'ce profil, sur ce téléphone et sur tes autres téléphones.'**
+  String get suppressionPoint3;
+
+  /// No description provided for @suppressionAttestations.
+  ///
+  /// In fr, this message translates to:
+  /// **'ARC peut garder les attestations déjà délivrées, comme le prévoit sa politique de confidentialité.'**
+  String get suppressionAttestations;
+
+  /// No description provided for @suppressionMotif.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pourquoi ? (facultatif)'**
+  String get suppressionMotif;
+
+  /// No description provided for @suppressionConfirmer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour confirmer, tape SUPPRIMER'**
+  String get suppressionConfirmer;
+
+  /// No description provided for @suppressionMotCle.
+  ///
+  /// In fr, this message translates to:
+  /// **'SUPPRIMER'**
+  String get suppressionMotCle;
+
+  /// No description provided for @suppressionBouton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get suppressionBouton;
+
+  /// No description provided for @suppressionHorsLigne.
+  ///
+  /// In fr, this message translates to:
+  /// **'Il faut du réseau pour envoyer ta demande à ARC. Réessaie quand tu as une connexion, ou fais la demande sur le site :'**
+  String get suppressionHorsLigne;
+
+  /// No description provided for @suppressionLienWeb.
+  ///
+  /// In fr, this message translates to:
+  /// **'https://academy.africaresourcecentre.org/suppression-compte'**
+  String get suppressionLienWeb;
+
+  /// No description provided for @suppressionSession.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ta session a expiré. Reconnecte-toi avec ton e-mail, puis réessaie.'**
+  String get suppressionSession;
+
+  /// No description provided for @suppressionErreur.
+  ///
+  /// In fr, this message translates to:
+  /// **'La demande n\'a pas pu être envoyée. Réessaie plus tard.'**
+  String get suppressionErreur;
+
+  /// No description provided for @suppressionFaite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demande envoyée'**
+  String get suppressionFaite;
+
+  /// No description provided for @suppressionOk.
+  ///
+  /// In fr, this message translates to:
+  /// **'J\'ai compris'**
+  String get suppressionOk;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
