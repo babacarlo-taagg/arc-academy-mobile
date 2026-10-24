@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: API ARC Academy — appli mobile
-  version: 0.1.0
+  version: 0.2.0
   summary: Contrat entre l'appli ARC Academy Mobile et la base Odoo Community d'ARC (module arc_mobile_api).
   description: |
     Source unique de vérité pour l'appli mobile (Flutter, Android et iOS) et pour le module Odoo `arc_mobile_api`.
@@ -29,6 +29,9 @@ info:
     - Effacement à distance : quand ARC marque un appareil ou un profil à effacer, le serveur répond
       `401 profil_efface` ; l'appli efface alors toutes les données de ce profil sur le téléphone.
     - Erreurs au format `application/problem+json` (RFC 9457) avec un `code` stable que l'appli traduit.
+    - **Suppression de compte** (0.2.0, exigée par Google Play et l'App Store) : l'apprenant demande dans l'appli la
+      suppression de son compte et de ses données (`demanderSuppression`). ARC traite la demande ; dès la demande,
+      tous ses profils sont marqués à effacer sur tous ses téléphones (`401 profil_efface` au passage suivant).
     - Identifiants des cours et leçons : les identifiants Odoo (`slide.channel`, `slide.slide`), déjà visibles
       dans les adresses du site ; l'accès est toujours vérifié côté serveur (cohortes et inscriptions).
   contact:
@@ -158,6 +161,32 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Apprenant' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  /moi/suppression:
+    post:
+      tags: [Profil]
+      operationId: demanderSuppression
+      summary: Demander la suppression de mon compte et de mes données
+      description: |
+        Enregistre la demande (une seule demande ouverte par compte : la renvoyer rend la même) et prévient ARC par
+        e-mail. Toutes les sessions de l'apprenant, sur tous ses téléphones, sont marquées à effacer : l'appli efface
+        tout de suite le profil sur ce téléphone, les autres le feront au prochain passage réseau. ARC supprime ou
+        anonymise ensuite le compte (les attestations déjà délivrées peuvent être gardées, voir la politique de
+        confidentialité).
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DemandeSuppression' }
+            example: { motif: Je change de métier. }
+      responses:
+        '202':
+          description: Demande enregistrée.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuppressionEnregistree' }
+        '400': { $ref: '#/components/responses/Invalide' }
         '401': { $ref: '#/components/responses/NonAuthentifie' }
 
   # ───────────────────────── Formations ─────────────────────────
@@ -456,6 +485,20 @@ components:
           items: { type: string, enum: [apprenant, tuteur] }
         langue: { type: string, enum: [fr, wo], default: fr }
       example: { id: 42, nom: Awa Diop, email: awa.diop@example.org, roles: [apprenant], langue: fr }
+
+    DemandeSuppression:
+      type: object
+      properties:
+        motif: { type: string, maxLength: 500, description: Facultatif. }
+    SuppressionEnregistree:
+      type: object
+      required: [demandeLe, message]
+      properties:
+        demandeLe: { type: string, format: date-time }
+        message: { type: string, description: Texte à afficher à l'apprenant. }
+      example:
+        demandeLe: '2026-10-24T09:00:00Z'
+        message: Ta demande est enregistrée. ARC supprimera ton compte et tes données sous 30 jours.
 
     Formation:
       type: object
