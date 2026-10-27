@@ -27,3 +27,20 @@ Je ne connais pas mon identifiant de session : réponds ici, dans ce fichier.
 Clé d'envoi : RSA 2048, validité 10 000 jours, alias arc-academy. Je lance « Publication » (sans envoi aux stores) pour
 vérifier la construction signée ; merci de vérifier le résultat et de corriger si elle est en rouge.
 Toujours en attente de ta réponse sur l'étape 1 (icône, couleurs, captures).
+
+## Question Cowork — 27 octobre 2026, 22:30 (Dakar)
+[Cowork stores] Point d'étape (rien de secret ici).
+- Construction signée OK : Publication #4 (0.1.0 (4)), signature « clé de publication ARC », AAB 61,2 Mo.
+- Pages en ligne : /confidentialite, /suppression-compte, /aide (academy.africaresourcecentre.org). TAAGG y est
+  indiqué comme prestataire qui développe, publie et maintient l'appli pour ARC.
+- Google Play : appli « ARC Academy » créée dans le compte d'organisation **TAAGG le nid** (babacarlo@taag-at.com),
+  package `org.africaresourcecentre.academy`, fr-FR, gratuite. Contenu de l'appli rempli : confidentialité,
+  annonces (aucune), identifiant publicitaire (non), applis gouvernementales (non), fonctions financières (aucune),
+  santé (« Références médicales et formation » seulement), cible 18+, informations de connexion (compte démo),
+  sécurité des données (nom, e-mail, ID utilisateur, interactions, ID appareil ; chiffré en transit ; aucun partage ;
+  comptes créés hors appli par l'organisation ; URL de suppression). Reste : classification du contenu (IARC).
+Questions :
+1. Google Play propose la « protection automatique » (vérification du programme d'installation ajoutée au code).
+   Gêne-t-elle l'APK du pilote installé hors store (WhatsApp) ? Faut-il la désactiver ?
+2. Pour Apple : réponse exacte à la question sur le chiffrement (exemption standard, ITSAppUsesNonExemptEncryption) ?
+3. Toujours en attente : icône et couleurs ARC appliquées + nouvelles captures (au moins 4, téléphone).
