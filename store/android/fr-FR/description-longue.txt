@@ -1,0 +1,23 @@
+ARC Academy est l'application de formation continue d'ARC (Africa Resource Centre) pour les acteurs de santé : infirmiers, sages-femmes, agents de santé communautaires, pharmaciens et gestionnaires de la chaîne d'approvisionnement en santé en Afrique de l'Ouest.
+
+Pensée pour les zones où le réseau est rare et cher :
+• Téléchargez vos cours quand vous avez du réseau, puis suivez-les sans connexion.
+• Votre progression est enregistrée sur le téléphone et envoyée automatiquement dès que le réseau revient. Rien ne se perd.
+• Les fichiers sont téléchargés une seule fois, et un téléchargement coupé reprend là où il s'était arrêté.
+• Plusieurs personnes peuvent utiliser le même téléphone : chacune a son propre profil, protégé par un code.
+
+Vos formations au même endroit :
+• Les parcours de votre cohorte : leçons, documents et modules interactifs.
+• Votre avancement, leçon par leçon.
+• Le suivi par votre tuteur et le responsable de votre cohorte, pour vous accompagner jusqu'à l'attestation.
+
+Simple et sûr :
+• Connexion avec un code reçu par e-mail, sans mot de passe à retenir.
+• Données chiffrées sur le téléphone et connexion sécurisée.
+• Aucune donnée de patient. Aucune publicité. Gratuit.
+• Suppression du compte possible à tout moment depuis l'application (Réglages › Supprimer mon compte).
+
+L'accès est réservé aux apprenants inscrits par ARC ou par une organisation partenaire. ARC Academy est une application de formation : elle ne remplace pas un avis médical et n'est pas un dispositif médical.
+
+Application d'ARC (Africa Resource Centre), développée et publiée par TAAGG, prestataire d'ARC.
+Aide : https://academy.africaresourcecentre.org/aide
