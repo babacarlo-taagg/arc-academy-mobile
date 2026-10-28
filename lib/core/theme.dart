@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 
-/// Couleurs de l'appli. Provisoires : aucune charte ARC n'a été trouvée dans les dépôts.
+/// Couleurs d'ARC (assets/marque/couleurs.md, tirées du logo et du site ; à confirmer par la charte d'ARC).
 /// Pour changer la charte, il suffit de modifier ces valeurs.
 class ArcCouleurs {
   const ArcCouleurs._();
 
-  static const primaire = Color(0xFF1F5C4A);
-  static const primaireFonce = Color(0xFF143D31);
-  static const primaireClair = Color(0xFFE3EFEA);
+  /// Teal ARC.
+  static const primaire = Color(0xFF204040);
+  static const primaireFonce = Color(0xFF152B2B);
+  static const primaireClair = Color(0xFFE1EBE9);
 
-  /// Progression et réussite (jamais pour du texte : contraste trop faible).
-  static const progression = Color(0xFF3FA372);
-  static const attention = Color(0xFFB45309);
-  static const attentionClair = Color(0xFFFFF4E5);
+  /// Or ARC : progression et mises en avant (jamais pour du texte : contraste trop faible).
+  static const progression = Color(0xFFD79C34);
+  static const attention = Color(0xFFA4471A);
+  static const attentionClair = Color(0xFFFBEEE3);
 
-  static const encre = Color(0xFF15211D);
-  static const texteDiscret = Color(0xFF4B5B55);
-  static const fond = Color(0xFFF3F6F4);
-  static const ligne = Color(0xFFDDE3E0);
+  static const encre = Color(0xFF12100B);
+  static const texteDiscret = Color(0xFF59544B);
+
+  /// Papier ARC.
+  static const fond = Color(0xFFF6F4EF);
+  static const ligne = Color(0xFFE3DDD2);
 }
 
 /// Thème : texte grand par défaut, gros boutons (faciles à toucher après une garde), police Lexend
@@ -40,7 +43,7 @@ ThemeData construireTheme() {
     surface: Colors.white,
     onSurface: ArcCouleurs.encre,
     onSurfaceVariant: ArcCouleurs.texteDiscret,
-    outline: Color(0xFFB8C4BF),
+    outline: Color(0xFFC6BEB1),
     outlineVariant: ArcCouleurs.ligne,
   );
   final base = ThemeData(colorScheme: scheme, useMaterial3: true, fontFamily: 'Lexend');

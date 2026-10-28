@@ -138,12 +138,20 @@ void main() {
     dossier.deleteSync(recursive: true);
   });
 
-  Future<void> capture(WidgetTester tester, String nom) async {
-    await attendre(tester, fois: 8);
-    await expectLater(find.byType(AppliArc), matchesGoldenFile('../../docs/captures/$nom.png'));
-  }
+  /// Parcourt les écrans et les capture au format demandé (taille logique, densité, dossier, écrans retenus).
+  Future<void> parcours(
+    WidgetTester tester, {
+    Size taille = const Size(360, 740),
+    double densite = 2,
+    String sortie = 'docs/captures',
+    Set<String>? ecrans,
+  }) async {
+    Future<void> capture(WidgetTester tester, String nom) async {
+      await attendre(tester, fois: 8);
+      if (ecrans != null && !ecrans.contains(nom)) return;
+      await expectLater(find.byType(AppliArc), matchesGoldenFile('../../$sortie/$nom.png'));
+    }
 
-  testWidgets('captures des écrans', (tester) async {
     await chargerPolices();
     final services = servicesDeTest(dossier, serveur.url);
     late String id;
@@ -154,7 +162,7 @@ void main() {
       final m = await services.profils.ouvrirSession(sessionDeTest(43, 'Moussa Ba'));
       await services.profils.definirPin(m.id, '1234');
     });
-    final conteneur = await lancerAppli(tester, services);
+    final conteneur = await lancerAppli(tester, services, taille: taille, densite: densite);
     await capture(tester, '01_profils');
 
     await tester.tap(find.byKey(Key('profil_$id')));
@@ -193,5 +201,31 @@ void main() {
     routeur.push('/reglages/suppression');
     await capture(tester, '09_suppression_compte');
     await terminer(tester, conteneur);
-  });
+  }
+
+  testWidgets('captures des écrans', (tester) => parcours(tester));
+
+  // Fiches des stores. Google Play : rapport hauteur/largeur de 2 au plus (1080×1920 ici).
+  // App Store : captures d'iPhone 6,9 pouces (1320×2868).
+  const ecransStores = {'01_profils', '03_connexion', '05_mes_formations', '06_cours', '08_reglages'};
+  testWidgets(
+    'captures Google Play',
+    (tester) => parcours(
+      tester,
+      taille: const Size(360, 640),
+      densite: 3,
+      sortie: 'store/android/fr-FR/captures',
+      ecrans: ecransStores,
+    ),
+  );
+  testWidgets(
+    'captures App Store',
+    (tester) => parcours(
+      tester,
+      taille: const Size(440, 956),
+      densite: 3,
+      sortie: 'store/ios/fr-FR/captures',
+      ecrans: ecransStores,
+    ),
+  );
 }

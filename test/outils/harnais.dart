@@ -81,9 +81,10 @@ Future<ProviderContainer> lancerAppli(
   WidgetTester tester,
   Services services, {
   Size taille = const Size(360, 740),
+  double densite = 2,
 }) async {
-  tester.view.physicalSize = taille * 2;
-  tester.view.devicePixelRatio = 2;
+  tester.view.physicalSize = taille * densite;
+  tester.view.devicePixelRatio = densite;
   addTearDown(tester.view.reset);
   final conteneur = ProviderContainer(overrides: [servicesProvider.overrideWithValue(services)]);
   addTearDown(conteneur.dispose);

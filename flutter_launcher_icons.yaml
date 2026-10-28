@@ -1,11 +1,10 @@
-# Icône de l'appli, générée à partir du logo d'ARC (déposé dans assets/marque/ par la session de publication).
-# Quand le fichier existe :  dart run flutter_launcher_icons
-# Couleur de fond de l'icône adaptative Android : à remplacer par la couleur principale d'ARC (assets/marque/couleurs.md).
+# Icône de l'appli, générée à partir du logo d'ARC (assets/marque/, déposé par la session de publication).
+# Après un changement de logo :  dart run flutter_launcher_icons
 flutter_launcher_icons:
   image_path: "assets/marque/icone-1024.png"
   android: true
   ios: true
   remove_alpha_ios: true
   min_sdk_android: 28
-  adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/marque/icone-1024.png"
+  adaptive_icon_background: "#F6F4EF"
+  adaptive_icon_foreground: "assets/marque/icone-premier-plan-1024.png"
