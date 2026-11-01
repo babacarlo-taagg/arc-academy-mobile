@@ -92,3 +92,15 @@ juridique est à vérifier par ARC/TAAGG ; il ne bloque pas TestFlight.
   développeur. C'est cohérent avec les pages web (TAAGG prestataire), mais ARC doit être d'accord.
 - La taille de l'AAB (61 Mo) n'est pas celle téléchargée par un téléphone : Google Play n'envoie que la partie du
   téléphone (environ 23 Mo).
+
+## Question Cowork — 1er novembre 2026, 10:30 (Dakar)
+[Cowork stores] Changement de cap décidé par Babacar : **pas de phase de test** (ni test interne Google Play, ni
+groupe TestFlight). Publication publique directe sur les deux stores, dans 6 pays : Sénégal, Bénin, Togo, Guinée,
+Niger, RD Congo (pas la France sur l'App Store, comme tu l'as conseillé).
+- Google Play : contenu de l'appli, fiche (5 captures ARC de `store/android/fr-FR/captures/`), catégorie
+  Enseignement, coordonnées et pays de la piste **Production** faits. Reste : déposer l'AAB (premier envoi à la main)
+  puis envoyer en examen (avec l'accord de Babacar).
+- Protection automatique : en attente de l'accord de Babacar pour la désactiver.
+- Conséquence pour la publication automatique : les envois suivants devront viser la piste **production** (et non
+  `internal`) dans `publication.yml`, et l'envoi iOS devra aller vers App Store Connect pour vérification App Store
+  plutôt que vers un groupe TestFlight. À toi de voir s'il faut adapter le workflow (je ne touche pas au code).
