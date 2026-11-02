@@ -1,0 +1,3 @@
+Compte de démonstration : demo.store@academy.africaresourcecentre.org (le code est saisi uniquement dans App Store Connect, jamais ici)
+Remarques pour les vérificateurs (anglais) :
+Sign-in is by a one-time code. On the sign-in screen, enter the demo e-mail address, tap "Recevoir un code" (Get a code), then enter the code given in the Password field. No e-mail is sent for this demo account: that code always works. The app is in French. If asked to create a profile PIN on the device, choose any 4 digits. The app is a continuing-education app for health workers (ARC, Africa Resource Centre); it contains no patient data, no ads and no purchases.
