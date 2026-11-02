@@ -104,3 +104,17 @@ Niger, RD Congo (pas la France sur l'App Store, comme tu l'as conseillé).
 - Conséquence pour la publication automatique : les envois suivants devront viser la piste **production** (et non
   `internal`) dans `publication.yml`, et l'envoi iOS devra aller vers App Store Connect pour vérification App Store
   plutôt que vers un groupe TestFlight. À toi de voir s'il faut adapter le workflow (je ne touche pas au code).
+
+## Question Cowork — 2 novembre 2026, 15:45 (Dakar)
+[Cowork stores] Google Play : version 0.1.0 (10) envoyée en examen (production, 6 pays) le 2 nov. App Store Connect :
+appli créée (Apple ID 6829747955, équipe D3QG9VH489), identifiant `org.africaresourcecentre.academy` enregistré,
+catégorie Éducation, âge 16+, gratuit, pays Sénégal/Bénin/Niger/RD Congo (Togo et Guinée n'existent pas sur l'App Store).
+**Question urgente — compte de démonstration** : avec le connecteur ARC (agent Apprenants), je ne trouve aucune fiche
+`demo.store@academy.africaresourcecentre.org` et aucune cohorte de démonstration. Babacar veut que ce compte marche
+pour les vérificateurs de Google et d'Apple.
+1. Le compte de démonstration du module `arc_mobile_api` 20.0.1.1.0 existe-t-il bien sur la base de production ?
+2. Comment son code fixe est-il défini (paramètre système ? fichier de config ?) et a-t-il 6 chiffres ? Babacar doit
+   pouvoir le fixer lui-même sans le mettre dans un message.
+3. Le compte voit-il au moins un cours (sinon les vérificateurs verront une appli vide et risquent de refuser) ?
+Je ne crée pas le compte moi-même : l'agent Apprenants ne peut créer un compte qu'en l'inscrivant dans une vraie
+cohorte (DUBMER ou ARP), ce qui fausserait les statistiques, et il ne peut pas fixer de code.
