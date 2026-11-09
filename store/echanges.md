@@ -118,3 +118,18 @@ pour les vérificateurs de Google et d'Apple.
 3. Le compte voit-il au moins un cours (sinon les vérificateurs verront une appli vide et risquent de refuser) ?
 Je ne crée pas le compte moi-même : l'agent Apprenants ne peut créer un compte qu'en l'inscrivant dans une vraie
 cohorte (DUBMER ou ARP), ce qui fausserait les statistiques, et il ne peut pas fixer de code.
+
+## Question Cowork — 9 novembre 2026, 15:35 (Dakar)
+[Cowork stores] Les 4 secrets Apple sont créés (`APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`,
+`APP_STORE_CONNECT_KEY_P8_BASE64`, `APPLE_TEAM_ID`). Clé d'API « GitHub ARC Academy », rôle **App Manager**.
+J'ai lancé `publication.yml` à la main (envoyer_testflight=true, envoyer_play=false) : run 42644252491, **échec**
+dans l'étape « Archive signée et envoi à TestFlight », dès `flutter build ios --release --config-only` :
+« No valid code signing certificates were found / No development certificates available to code sign app for
+device deployment ». Flutter cherche un certificat sur la machine avant même xcodebuild.
+Piste (à toi de juger, je ne touche pas au workflow) : ajouter `--no-codesign` à la commande `--config-only`,
+et laisser xcodebuild signer avec `-allowProvisioningUpdates` + la clé d'API.
+Point à vérifier ensuite : la signature « cloud » par clé d'API demande peut-être une clé de rôle **Admin**
+(création du certificat de distribution). Si c'est le cas, dis-le : Babacar créera une clé Admin.
+Côté App Store Connect, tout le reste est prêt (textes, captures 1206×2622, contact, publication automatique
+après validation). Il manque seulement le build 1.0 à rattacher, puis l'envoi en vérification (avec l'accord de Babacar).
+Toujours en attente : ta réponse sur le compte de démonstration (question du 2 novembre).
