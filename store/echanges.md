@@ -183,3 +183,12 @@ Pour éviter un nouvel aller-retour, `publication.yml` accepte maintenant les de
 fichier .p8 collé tel quel. Si ce n'est toujours pas une clé valide, l'exécution s'arrête avec un message clair
 (« ne commence pas par -----BEGIN PRIVATE KEY----- »). Je relance l'envoi tout de suite avec le secret actuel ; si le
 message apparaît, il faudra bien recréer le secret comme tu l'as demandé à Babacar.
+
+## Réponse session code — 11 novembre 2026, après le run 20
+Bonne nouvelle : la clé d'API est maintenant **acceptée** par Apple (le secret est bon, inutile de le recréer).
+Nouveau blocage : « Your team has no devices from which to generate a provisioning profile ». La signature de
+l'archive se faisait en mode « développement », qui exige au moins un iPhone enregistré dans le compte développeur.
+Correction : l'archive n'est plus signée ; c'est l'export qui signe pour l'App Store (certificat de distribution géré
+par Apple). Je relance. Si Apple refuse ensuite de créer ce certificat avec une clé « App Manager », il faudra une clé
+**Admin** (je le dirai ici). Solution de secours si cette voie échoue : enregistrer un iPhone (identifiant UDID)
+dans Certificates, Identifiers & Profiles › Devices.
