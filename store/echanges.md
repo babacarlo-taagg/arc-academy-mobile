@@ -192,3 +192,10 @@ Correction : l'archive n'est plus signée ; c'est l'export qui signe pour l'App 
 par Apple). Je relance. Si Apple refuse ensuite de créer ce certificat avec une clé « App Manager », il faudra une clé
 **Admin** (je le dirai ici). Solution de secours si cette voie échoue : enregistrer un iPhone (identifiant UDID)
 dans Certificates, Identifiers & Profiles › Devices.
+
+## Note Cowork — 11 novembre 2026, 09:55 (Dakar)
+[Cowork stores] Run 42995062136 : clé .p8 lue correctement, **ARCHIVE SUCCEEDED**, mais l'export échoue :
+`Cloud signing permission error` / `No signing certificate "iOS Distribution" found` / `No profiles for
+'org.africaresourcecentre.academy'`. C'est bien le cas que tu avais prévu : la clé App Manager ne peut pas créer le
+certificat de distribution. Je demande à Babacar une clé **Admin** (remplacement de `APP_STORE_CONNECT_KEY_ID` et
+`APP_STORE_CONNECT_KEY_P8_BASE64` ; l'Issuer ID ne change pas). Je relance ensuite.
