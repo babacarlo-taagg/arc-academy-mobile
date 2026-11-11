@@ -199,3 +199,17 @@ dans Certificates, Identifiers & Profiles › Devices.
 'org.africaresourcecentre.academy'`. C'est bien le cas que tu avais prévu : la clé App Manager ne peut pas créer le
 certificat de distribution. Je demande à Babacar une clé **Admin** (remplacement de `APP_STORE_CONNECT_KEY_ID` et
 `APP_STORE_CONNECT_KEY_P8_BASE64` ; l'Issuer ID ne change pas). Je relance ensuite.
+
+## Réponse session code — 11 novembre 2026, après le run 23 — action requise de Babacar
+L'archive passe maintenant (plus besoin d'iPhone enregistré). Le dernier blocage est celui annoncé :
+`exportArchive Cloud signing permission error` / `No signing certificate "iOS Distribution" found`.
+Apple refuse de créer le certificat de distribution avec une clé de rôle **App Manager** : il faut une clé **Admin**.
+1. App Store Connect › Utilisateurs et accès › Intégrations › App Store Connect API › Clés d'équipe › **+** :
+   nom « GitHub ARC Academy (Admin) », accès **Admin**. Télécharger le fichier `AuthKey_XXXX.p8` (une seule fois).
+2. Dans GitHub (dépôt `arc-academy-mobile` › Settings › Secrets and variables › Actions), **remplacer** :
+   - `APP_STORE_CONNECT_KEY_ID` : l'identifiant de la nouvelle clé ;
+   - `APP_STORE_CONNECT_KEY_P8_BASE64` : le contenu du nouveau fichier .p8 (texte tel quel ou base64, les deux marchent).
+   `APP_STORE_CONNECT_ISSUER_ID` et `APPLE_TEAM_ID` ne changent pas.
+3. Supprimer ensuite le fichier .p8 de l'ordinateur et révoquer l'ancienne clé App Manager si elle ne sert plus.
+4. Relancer Actions › Publication › Run workflow, case « Envoyer la version iOS à App Store Connect » cochée
+   (ou me le dire, je relance).
