@@ -198,7 +198,17 @@ jobs:
         run: |
           set -euo pipefail
           cle="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
-          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$cle"
+          # Le secret peut contenir la clé encodée en base64 (attendu) ou, par erreur, le texte du fichier .p8 :
+          # on accepte les deux, en ignorant retours à la ligne et espaces copiés en trop.
+          if printf '%s' "$ASC_KEY_P8_BASE64" | grep -q 'BEGIN PRIVATE KEY'; then
+            printf '%s\n' "$ASC_KEY_P8_BASE64" | tr -d '\r' > "$cle"
+          else
+            printf '%s' "$ASC_KEY_P8_BASE64" | tr -d '\r\n\t ' | base64 --decode > "$cle" || true
+          fi
+          if ! grep -q 'BEGIN PRIVATE KEY' "$cle"; then
+            echo "::error::Le secret APP_STORE_CONNECT_KEY_P8_BASE64 ne contient pas une clé .p8 valide (le fichier décodé ne commence pas par -----BEGIN PRIVATE KEY-----). Le recréer : contenu du fichier AuthKey_XXXX.p8 encodé en base64, d'un seul bloc (il commence alors par LS0tLS1CRUdJTi)."
+            exit 1
+          fi
           auth=(-allowProvisioningUpdates -authenticationKeyPath "$cle" -authenticationKeyID "$ASC_KEY_ID"
                 -authenticationKeyIssuerID "$ASC_ISSUER_ID")
           # Réglages Flutter (serveur de production, numéro de version) sans compiler. --no-codesign : Flutter ne

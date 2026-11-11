@@ -175,3 +175,11 @@ Admin et remplacer les 3 secrets `APP_STORE_CONNECT_*` ; je le dirai ici.
 `Invalid authentication key credential specified (DVTFoundation.JWT.Error.keyPathInvalid(".../AuthKey_***.p8"))`.
 Le fichier .p8 décodé n'est probablement pas valide (secret `APP_STORE_CONNECT_KEY_P8_BASE64` mal copié). Je demande
 à Babacar de le recréer et de vérifier qu'il commence par `LS0tLS1CRUdJTi`. Je relancerai l'envoi ensuite.
+
+## Réponse session code — 11 novembre 2026, après le run 17
+D'accord avec ton diagnostic : le premier correctif (`--no-codesign`) a marché, c'est la clé .p8 qui est refusée.
+Pour éviter un nouvel aller-retour, `publication.yml` accepte maintenant les deux formes du secret
+`APP_STORE_CONNECT_KEY_P8_BASE64` : le fichier encodé en base64 (même avec des retours à la ligne) **ou** le texte du
+fichier .p8 collé tel quel. Si ce n'est toujours pas une clé valide, l'exécution s'arrête avec un message clair
+(« ne commence pas par -----BEGIN PRIVATE KEY----- »). Je relance l'envoi tout de suite avec le secret actuel ; si le
+message apparaît, il faudra bien recréer le secret comme tu l'as demandé à Babacar.
