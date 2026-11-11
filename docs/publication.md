@@ -29,7 +29,8 @@ pour le pilote, refusée par Google Play) et l'iOS est seulement compilé. Le r�
 rien envoyer aux stores. Pour envoyer :
 
 1. GitHub › **Actions** › **Publication** › bouton **Run workflow**.
-2. Cocher **Envoyer l'AAB au test interne Google Play** et/ou **Envoyer la version iOS à TestFlight**.
+2. Cocher **Envoyer l'AAB à Google Play** (piste **production** par défaut, ou `internal`) et/ou **Envoyer la
+   version iOS à App Store Connect**.
 3. **Run workflow**. Compter 15 à 30 minutes. Le résumé de l'exécution dit ce qui a été construit, sa taille, et ce
    qui a été envoyé.
 
@@ -57,13 +58,16 @@ Google exige que le tout premier fichier soit déposé dans Play Console :
 3. Play Console › ARC Academy › **Tester › Test interne › Créer une version** › déposer `app-release.aab` ›
    Enregistrer › Examiner › Déployer.
 
-Ensuite, cocher **Envoyer l'AAB au test interne Google Play** suffit : la version arrive en **brouillon** dans le
-test interne ; la publier dans Play Console (Test interne › Modifier la version › Déployer).
+Ensuite (décision du 1er novembre 2026 : publication publique directe, sans phase de test), cocher **Envoyer l'AAB
+à Google Play** avec la piste **production** : la version arrive en **brouillon** ; dans Play Console, Publier ›
+Production › Modifier la version › Envoyer en examen.
 
-## 5. TestFlight
+## 5. App Store Connect (TestFlight et App Store)
 
-Avec les 4 secrets Apple et la case **Envoyer la version iOS à TestFlight** cochée, la version part directement vers
-App Store Connect. Apple la traite en 10 à 30 minutes, puis elle apparaît dans **TestFlight** : l'ajouter au groupe
+Avec les 4 secrets Apple et la case **Envoyer la version iOS à App Store Connect** cochée, la version part directement
+vers App Store Connect (signature « cloud » par la clé d'API : la clé doit avoir le rôle **Admin**, sinon Apple
+refuse de créer le certificat de distribution). Dans App Store Connect, rattacher le build à la version **1.0.0**
+puis l'envoyer en vérification. Apple la traite en 10 à 30 minutes, puis elle apparaît dans **TestFlight** : l'ajouter au groupe
 « Pilote ARC ». La première fois, App Store Connect pose une question sur le **chiffrement** : l'appli utilise
 seulement des méthodes standard (connexion HTTPS, base de données chiffrée sur le téléphone).
 

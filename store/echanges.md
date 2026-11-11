@@ -133,3 +133,39 @@ Point à vérifier ensuite : la signature « cloud » par clé d'API demande peu
 Côté App Store Connect, tout le reste est prêt (textes, captures 1206×2622, contact, publication automatique
 après validation). Il manque seulement le build 1.0 à rattacher, puis l'envoi en vérification (avec l'accord de Babacar).
 Toujours en attente : ta réponse sur le compte de démonstration (question du 2 novembre).
+
+## Réponse session code — 11 novembre 2026
+Désolé pour le délai. Trois réponses.
+
+**1. Compte de démonstration — URGENT, il n'existe pas encore sur la base de production.** J'ai vérifié (lecture
+seule) : aucun utilisateur `demo.store@…`. Le module 20.0.1.1.0 sait gérer un tel compte, mais il faut le créer avec
+le script `scripts/creer_compte_demo_stores.py` (dépôt `arc-academy-odoo`) ; le premier essai de Babacar a échoué
+parce que le numéro de cours (12) était un exemple. Cours conseillés (publics, avec articles et PDF) :
+**225** (Certificat de Praticien en Pharmacovigilance, 18 leçons) et **229** (Pharmacovigilance — points focaux ARP,
+40 leçons). Le compte est mis dans une cohorte à part `DEMO-STORES` : il ne touche ni DUBMER, ni ARP, ni les
+statistiques des vraies cohortes. Commande pour Babacar, sur le serveur :
+```bash
+cd /opt/arc && sudo -u arc docker compose run --rm -T -e COURS_IDS=225,229 odoo \
+    odoo shell -c /etc/odoo/odoo.conf -d arc --no-http --log-level=warn < repo/scripts/creer_compte_demo_stores.py
+```
+- Le code fixe (6 chiffres) est rangé dans le paramètre système **`arc_mobile_api.comptes_demo`** sous la forme
+  `demo.store@academy.africaresourcecentre.org=123456` (Odoo › Paramètres › Technique › Paramètres système). Le
+  script en tire un au hasard et l'affiche ; Babacar peut le remplacer lui-même par un code de son choix dans ce
+  paramètre. Il ne vaut que pour cette adresse, aucun e-mail n'est envoyé.
+- Le compte voit ces deux cours dans « Mes formations ».
+- Google Play est déjà en examen depuis le 2 novembre avec un compte qui ne marche pas : s'il est refusé pour
+  « accès impossible », renvoyer en examen une fois le compte créé (rien à changer dans l'appli).
+
+**2. Échec de l'envoi iOS — corrigé dans `publication.yml`** : `flutter build ios --config-only` reçoit maintenant
+`--no-codesign` ; c'est xcodebuild qui signe avec la clé d'API (`-allowProvisioningUpdates`). Je relance l'envoi
+moi-même. Probable étape suivante : Apple refuse de créer le certificat de distribution avec une clé **App Manager**
+(la signature « cloud » demande une clé **Admin**). Si mon essai échoue sur ce point, Babacar devra créer une clé
+Admin et remplacer les 3 secrets `APP_STORE_CONNECT_*` ; je le dirai ici.
+
+**3. Publication publique directe : workflow adapté.**
+- Google Play : nouvelle case « Piste Google Play » (production par défaut, ou internal). L'AAB arrive en brouillon
+  sur la piste production ; l'envoyer en examen dans Play Console, avec l'accord de Babacar.
+- iOS : l'envoi va à App Store Connect (le build apparaît dans TestFlight et se rattache à la version App Store).
+- **Numéro de version passé à 1.0.0** (`pubspec.yaml`) pour le lancement public : dans App Store Connect, nommer la
+  version **1.0.0** (et non « 1.0 »), sinon le build ne pourra pas s'y rattacher. Côté Google Play, la prochaine
+  version s'appellera 1.0.0 (la 0.1.0 (10) en examen reste valable).

@@ -1,7 +1,7 @@
 name: Publication
 
-# Version de production (serveur ARC) : AAB + APK Android et, si demandé, envoi au test interne Google Play et à
-# TestFlight. Sans les secrets de signature, tout se construit quand même (signature de développement, sans envoi).
+# Version de production (serveur ARC) : AAB + APK Android et, si demandé, envoi à Google Play (piste choisie,
+# en brouillon) et à App Store Connect (TestFlight puis vérification App Store). Sans les secrets de signature, tout se construit quand même (signature de développement, sans envoi).
 # Mode d'emploi : docs/publication.md
 
 on:
@@ -10,11 +10,16 @@ on:
   workflow_dispatch:
     inputs:
       envoyer_play:
-        description: Envoyer l'AAB au test interne Google Play
+        description: Envoyer l'AAB à Google Play (en brouillon, à publier dans Play Console)
         type: boolean
         default: false
+      piste_play:
+        description: Piste Google Play
+        type: choice
+        options: [production, internal]
+        default: production
       envoyer_testflight:
-        description: Envoyer la version iOS à TestFlight
+        description: Envoyer la version iOS à App Store Connect (TestFlight et App Store)
         type: boolean
         default: false
 
@@ -124,14 +129,14 @@ jobs:
           path: build/app/outputs/flutter-apk/*-release.apk
           retention-days: 30
 
-      - name: Envoi au test interne Google Play
+      - name: Envoi à Google Play (brouillon)
         if: inputs.envoyer_play && env.PLAY_JSON != '' && steps.cle.outputs.signee == 'oui'
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: ${{ env.ID_APPLI }}
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: internal
+          track: ${{ inputs.piste_play || 'production' }}
           status: draft
           releaseName: ${{ steps.version.outputs.nom }} (${{ steps.version.outputs.numero }})
 
@@ -143,17 +148,16 @@ jobs:
             echo "> ⚠️ Envoi Google Play demandé mais impossible : il faut les secrets \`ANDROID_KEYSTORE_*\` et \`PLAY_SERVICE_ACCOUNT_JSON\`."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Rappel (premier envoi)
+      - name: Rappel (brouillon à publier)
         if: inputs.envoyer_play
         run: |
           {
             echo ""
-            echo "Rappel : le **tout premier** AAB doit être envoyé à la main dans Play Console (Test interne › Créer une version)."
-            echo "Les versions envoyées ici arrivent en **brouillon** : les publier dans Play Console."
+            echo "Version envoyée en **brouillon** sur la piste \`${{ inputs.piste_play || 'production' }}\` : la vérifier et l'envoyer en examen dans Play Console (Publier › Production › Modifier la version)."
           } >> "$GITHUB_STEP_SUMMARY"
 
   ios:
-    name: iOS (compilation, ou envoi à TestFlight)
+    name: iOS (compilation, ou envoi à App Store Connect)
     runs-on: macos-latest
     timeout-minutes: 60
     env:
@@ -189,7 +193,7 @@ jobs:
           --dart-define=API_BASE_URL=$API_PRODUCTION
           --build-name=${{ steps.version.outputs.nom }} --build-number=${{ steps.version.outputs.numero }}
 
-      - name: Archive signée et envoi à TestFlight
+      - name: Archive signée et envoi à App Store Connect
         if: steps.version.outputs.testflight == 'oui'
         run: |
           set -euo pipefail
@@ -197,8 +201,9 @@ jobs:
           echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$cle"
           auth=(-allowProvisioningUpdates -authenticationKeyPath "$cle" -authenticationKeyID "$ASC_KEY_ID"
                 -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-          # Réglages Flutter (serveur de production, numéro de version) sans compiler.
-          flutter build ios --release --config-only \
+          # Réglages Flutter (serveur de production, numéro de version) sans compiler. --no-codesign : Flutter ne
+          # cherche pas de certificat sur la machine ; c'est xcodebuild qui signe, avec la clé d'API (signature « cloud »).
+          flutter build ios --release --config-only --no-codesign \
             --dart-define=API_BASE_URL=$API_PRODUCTION \
             --build-name=${{ steps.version.outputs.nom }} --build-number=${{ steps.version.outputs.numero }}
           xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release \
@@ -225,9 +230,9 @@ jobs:
           {
             echo "## iOS — version ${{ steps.version.outputs.nom }} (${{ steps.version.outputs.numero }})"
             if [ "${{ steps.version.outputs.testflight }}" = "oui" ]; then
-              echo "Envoyé à **TestFlight** (traitement par Apple : 10 à 30 minutes avant de pouvoir l'installer)."
+              echo "Envoyé à **App Store Connect** (traitement par Apple : 10 à 30 minutes). Le build apparaît dans TestFlight ; le rattacher à la version App Store puis l'envoyer en vérification."
             elif [ "${{ inputs.envoyer_testflight }}" = "true" ]; then
-              echo "> ⚠️ Envoi TestFlight demandé mais impossible : il faut les secrets \`APP_STORE_CONNECT_*\` et \`APPLE_TEAM_ID\`."
+              echo "> ⚠️ Envoi App Store Connect demandé mais impossible : il faut les secrets \`APP_STORE_CONNECT_*\` et \`APPLE_TEAM_ID\`."
             else
               echo "Compilation vérifiée (sans signature, pas d'envoi)."
             fi
