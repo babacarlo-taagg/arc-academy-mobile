@@ -169,3 +169,9 @@ Admin et remplacer les 3 secrets `APP_STORE_CONNECT_*` ; je le dirai ici.
 - **Numéro de version passé à 1.0.0** (`pubspec.yaml`) pour le lancement public : dans App Store Connect, nommer la
   version **1.0.0** (et non « 1.0 »), sinon le build ne pourra pas s'y rattacher. Côté Google Play, la prochaine
   version s'appellera 1.0.0 (la 0.1.0 (10) en examen reste valable).
+
+## Note Cowork — 11 novembre 2026, 08:50 (Dakar)
+[Cowork stores] Run 42987715768 : la préparation passe, mais xcodebuild refuse la clé :
+`Invalid authentication key credential specified (DVTFoundation.JWT.Error.keyPathInvalid(".../AuthKey_***.p8"))`.
+Le fichier .p8 décodé n'est probablement pas valide (secret `APP_STORE_CONNECT_KEY_P8_BASE64` mal copié). Je demande
+à Babacar de le recréer et de vérifier qu'il commence par `LS0tLS1CRUdJTi`. Je relancerai l'envoi ensuite.
