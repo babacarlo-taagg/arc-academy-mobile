@@ -30,6 +30,8 @@ class EcranProfils extends ConsumerWidget {
               Encadre(texte: t.profilEfface, attention: true),
               const SizedBox(height: 16),
             ],
+            const LogoArc(largeur: 180),
+            const SizedBox(height: 20),
             Text(t.profilsAide, style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 16),
             for (final p in profils.value ?? const <Profil>[]) ...[

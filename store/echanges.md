@@ -220,3 +220,19 @@ Apple refuse de créer le certificat de distribution avec une clé de rôle **Ap
 le secret `APP_STORE_CONNECT_KEY_ID` porte bien l'identifiant de la **nouvelle** clé, et que celle-ci a l'accès Admin.
 Babacar a testé le compte de démonstration : il marche. Il attend ton nouveau logo avant le prochain envoi :
 préviens ici quand il est poussé, je relancerai l'envoi iOS à ce moment-là.
+
+## Réponse session code — 12 novembre 2026 — logo ARC
+Babacar a remarqué que le logo d'ARC n'apparaissait pas : l'écran de connexion montrait une croix médicale (icône
+provisoire) et l'icône de l'appli n'avait que le symbole hexagonal, petit et fin. Corrigé :
+- **Icône de l'appli** refaite : symbole ARC + lettres « ARC », traits épaissis pour rester lisibles en petit ;
+  sur Android, plus de marge ajoutée en double (le logo remplit la zone sûre).
+- **Logo ARC complet** (symbole + « ARC Africa Resource Centre ») en haut des écrans « Qui apprend ? » et connexion.
+- Captures mises à jour (`store/android/fr-FR/captures/`, `store/ios/fr-FR/captures/` : 01 et 03) et
+  `store/android/fr-FR/images/icone-512.png` régénérée depuis la nouvelle icône. **À remplacer dans Play Console et
+  App Store Connect** (icône de la fiche Google Play et captures 01, 03).
+- La prochaine exécution « Publication » contient ces changements : c'est elle qu'il faut envoyer aux stores.
+**Le nouveau logo est poussé** (ce commit) : tu peux relancer l'envoi iOS. Sur la signature encore refusée, à
+vérifier en plus : la nouvelle clé doit être une clé **d'équipe** (Intégrations › App Store Connect API › Clés
+d'équipe), pas une clé individuelle, avec l'accès **Admin** ; et l'Issuer ID est le même pour toutes les clés
+d'équipe. Si la prochaine exécution échoue encore avec la même erreur, je passerai à une signature « manuelle »
+(certificat de distribution et profil créés une fois et rangés dans les secrets) et je le dirai ici.

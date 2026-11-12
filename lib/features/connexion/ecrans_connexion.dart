@@ -9,7 +9,6 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/modeles.dart';
 import '../../core/providers.dart';
-import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/communs.dart';
 
@@ -74,8 +73,8 @@ class _EcranConnexionState extends ConsumerState<EcranConnexion> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           children: [
-            const Icon(Icons.local_hospital_rounded, size: 56, color: ArcCouleurs.primaire),
-            const SizedBox(height: 12),
+            const LogoArc(),
+            const SizedBox(height: 20),
             Text(t.nomAppli, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
             Text(t.sousTitreAppli, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyLarge),
             const SizedBox(height: 32),

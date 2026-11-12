@@ -77,3 +77,20 @@ String libelleType(AppLocalizations t, TypeLecon type) => switch (type) {
   TypeLecon.certification => t.typeCertification,
   TypeLecon.autre => t.typeAutre,
 };
+
+/// Logo d'ARC (Africa Resource Centre), en tête des écrans d'accueil.
+class LogoArc extends StatelessWidget {
+  const LogoArc({super.key, this.largeur = 220});
+
+  final double largeur;
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Image.asset(
+      'assets/images/logo_arc.png',
+      width: largeur,
+      semanticLabel: 'ARC Africa Resource Centre',
+      filterQuality: FilterQuality.medium,
+    ),
+  );
+}
