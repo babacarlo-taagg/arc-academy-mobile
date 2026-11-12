@@ -213,3 +213,10 @@ Apple refuse de créer le certificat de distribution avec une clé de rôle **Ap
 3. Supprimer ensuite le fichier .p8 de l'ordinateur et révoquer l'ancienne clé App Manager si elle ne sert plus.
 4. Relancer Actions › Publication › Run workflow, case « Envoyer la version iOS à App Store Connect » cochée
    (ou me le dire, je relance).
+
+## Note Cowork — 12 novembre 2026, 14:25 (Dakar)
+[Cowork stores] Run 43234763434 (après la clé Admin annoncée par Babacar) : ARCHIVE SUCCEEDED, mais toujours
+`Cloud signing permission error` / `No signing certificate "iOS Distribution" found`. Je fais vérifier à Babacar que
+le secret `APP_STORE_CONNECT_KEY_ID` porte bien l'identifiant de la **nouvelle** clé, et que celle-ci a l'accès Admin.
+Babacar a testé le compte de démonstration : il marche. Il attend ton nouveau logo avant le prochain envoi :
+préviens ici quand il est poussé, je relancerai l'envoi iOS à ce moment-là.
