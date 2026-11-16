@@ -426,4 +426,129 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get suppressionOk => 'J\'ai compris';
+
+  @override
+  String get profilTitre => 'Ton profil';
+
+  @override
+  String get profilIntro => 'Deux questions pour que tes formations correspondent à ton pays et à ton métier.';
+
+  @override
+  String get profilPays => 'Pays où tu travailles';
+
+  @override
+  String get profilPaysChoisir => 'Choisis ton pays';
+
+  @override
+  String get profilPaysRecherche => 'Chercher un pays';
+
+  @override
+  String get profilMetier => 'Ton métier';
+
+  @override
+  String get profilLangue => 'Langue de l\'appli';
+
+  @override
+  String get profilContinuer => 'Continuer';
+
+  @override
+  String get profilManque => 'Choisis ton pays et ton métier pour continuer.';
+
+  @override
+  String get profilChargement => 'Préparation de ton profil…';
+
+  @override
+  String get profilReseauNecessaire =>
+      'Il faut du réseau une fois pour préparer ton profil. Ensuite, l\'appli marche sans réseau.';
+
+  @override
+  String get profilAucunResultat => 'Aucun résultat.';
+
+  @override
+  String get profilNonRenseigne => 'Non renseigné';
+
+  @override
+  String get profilEnregistre => 'C\'est enregistré.';
+
+  @override
+  String get profilEnregistreHorsLigne => 'Enregistré sur le téléphone. Envoi à ARC dès que le réseau revient.';
+
+  @override
+  String profilCompletude(int pourcent) {
+    return 'Profil complété à $pourcent %';
+  }
+
+  @override
+  String get profilCompleter => 'Compléter mon profil';
+
+  @override
+  String get enregistrer => 'Enregistrer';
+
+  @override
+  String get institutionTitre => 'Ton institution';
+
+  @override
+  String get institutionIntro => 'Où travailles-tu ? ARC pourra mieux suivre et soutenir ton équipe.';
+
+  @override
+  String get institutionRepondre => 'Répondre';
+
+  @override
+  String get institutionPlusTard => 'Plus tard';
+
+  @override
+  String get institutionNom => 'Nom de ton institution';
+
+  @override
+  String get institutionRechercheAide => 'Tape au moins 3 lettres pour chercher.';
+
+  @override
+  String get institutionHorsLigne => 'Sans réseau : tape le nom, il sera envoyé plus tard.';
+
+  @override
+  String institutionUtiliserNom(String nom) {
+    return 'Pas dans la liste : garder « $nom »';
+  }
+
+  @override
+  String get institutionType => 'Type d\'institution';
+
+  @override
+  String get institutionNiveau => 'Niveau';
+
+  @override
+  String get sexeTitre => 'Tu es…';
+
+  @override
+  String get sexeAide => 'Facultatif. Sert seulement à des statistiques anonymes.';
+
+  @override
+  String get sexePasser => 'Passer';
+
+  @override
+  String get monProfilTitre => 'Mon profil';
+
+  @override
+  String get monProfilSexe => 'Sexe';
+
+  @override
+  String get whatsappTitre => 'WhatsApp';
+
+  @override
+  String get whatsappNumero => 'Numéro WhatsApp';
+
+  @override
+  String get whatsappAide => 'Avec l\'indicatif du pays, par exemple +221771234567';
+
+  @override
+  String get whatsappInvalide => 'Numéro incomplet : commence par + et l\'indicatif du pays.';
+
+  @override
+  String get whatsappAccordActif => 'Tu as accepté qu\'ARC t\'écrive sur WhatsApp.';
+
+  @override
+  String get whatsappRetirer => 'Retirer mon accord';
+
+  @override
+  String get whatsappAccordRetire => 'Accord retiré : ARC ne t\'écrira plus sur WhatsApp.';
 }

@@ -6,6 +6,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:storage_space/storage_space.dart';
@@ -16,6 +17,7 @@ import 'contenus/depot_contenus.dart';
 import 'contenus/telechargeur.dart';
 import 'db/base.dart';
 import 'env.dart';
+import 'profil/service_profil.dart';
 import 'profils/coffre_fort.dart';
 import 'profils/profils.dart';
 import 'reglages/reglages.dart';
@@ -65,6 +67,7 @@ class Services {
     this.adaptateur,
     this.plateforme = 'android',
     this.basesEnArrierePlan = true,
+    this.langueTelephone = langueDuTelephone,
   });
 
   final CoffreFort coffre;
@@ -83,6 +86,9 @@ class Services {
 
   /// Bases ouvertes dans un isolat à part (l'écran reste fluide). Désactivé dans les tests d'écrans.
   final bool basesEnArrierePlan;
+
+  /// Langue du téléphone (`fr` ou `en`), utilisée tant que le profil n'en a pas.
+  final String Function() langueTelephone;
 
   /// Client sans session : demander un code, ouvrir une session, aide.
   late final ApiClient apiPublic = ApiClient(
@@ -168,6 +174,7 @@ class Services {
       journal: journal,
       moteur: moteur,
       telechargeur: Telechargeur(depot: depot, api: api, placeLibre: placeLibre),
+      profilApprenant: ServiceProfil(db: db, api: api, langueTelephone: langueTelephone),
     );
     return ouvert;
   }
@@ -179,6 +186,15 @@ class Services {
       if (f.existsSync()) await f.delete();
     }
     await profils.effacerProfil(profilId);
+  }
+}
+
+/// `en` si le téléphone est en anglais, sinon `fr`.
+String langueDuTelephone() {
+  try {
+    return WidgetsBinding.instance.platformDispatcher.locale.languageCode == 'en' ? 'en' : 'fr';
+  } catch (_) {
+    return 'fr';
   }
 }
 
@@ -211,6 +227,7 @@ class ProfilOuvert {
     required this.journal,
     required this.moteur,
     required this.telechargeur,
+    required this.profilApprenant,
   });
 
   final Services services;
@@ -220,6 +237,9 @@ class ProfilOuvert {
   final JournalApprenant journal;
   final MoteurSynchro moteur;
   final Telechargeur telechargeur;
+
+  /// Pays, métier, institution… (profil progressif).
+  final ServiceProfil profilApprenant;
 
   bool _ferme = false;
   bool get estFerme => _ferme;
@@ -258,10 +278,11 @@ class ProfilOuvert {
     }
   }
 
-  /// Envoie la file puis met à jour la liste des cours. Silencieux hors ligne.
+  /// Envoie la file et le profil, puis met à jour le profil et la liste des cours. Silencieux hors ligne.
   Future<void> rafraichir() async {
     if (_ferme) return;
     await moteur.envoyer();
+    await profilApprenant.rafraichir();
     try {
       await mettreAJourFormations();
     } on ApiException {
@@ -301,6 +322,7 @@ class ProfilOuvert {
     _ferme = true;
     _attenteEnvoi?.cancel();
     await _reseau?.cancel();
+    await profilApprenant.fermer();
     services.serveurLocal.surCommit = null;
     services.serveurLocal.configScorm = null;
     await moteur.fermer();

@@ -24,6 +24,9 @@ void main() {
   }
 
   testWidgets('connexion, code secret, Mes formations, cours, réglages', (tester) async {
+    // Téléphone en français (les émulateurs démarrent en anglais) ; l'anglais est vérifié par les tests d'écrans.
+    binding.platformDispatcher.localeTestValue = const Locale('fr', 'SN');
+    binding.platformDispatcher.localesTestValue = const [Locale('fr', 'SN')];
     final chrono = Stopwatch()..start();
     appli.main();
     await binding.convertFlutterSurfaceToImage();

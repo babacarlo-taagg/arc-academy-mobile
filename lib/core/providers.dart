@@ -8,6 +8,7 @@ import 'api/modeles.dart';
 import 'contenus/depot_contenus.dart';
 import 'contenus/telechargeur.dart';
 import 'db/base.dart';
+import 'profil/service_profil.dart';
 import 'profils/profils.dart';
 import 'reglages/reglages.dart';
 import 'services.dart';
@@ -56,6 +57,7 @@ class ProfilOuvertNotifier extends Notifier<ProfilOuvert?> {
         ref.read(messageProvider.notifier).afficher('session_a_reprendre');
       },
     );
+    await ouvert.profilApprenant.charger();
     ouvert.activer();
     state = ouvert;
   }
@@ -107,6 +109,22 @@ final envoiEnCoursProvider = StreamProvider<bool>((ref) {
   if (moteur == null) return Stream.value(false);
   return moteur.envoiEnCours;
 });
+
+/// Profil apprenant du profil ouvert (pays, métier…), réémis à chaque changement.
+final profilApprenantProvider = StreamProvider<InstantaneProfil?>((ref) async* {
+  final service = ref.watch(profilOuvertProvider)?.profilApprenant;
+  if (service == null) {
+    yield null;
+    return;
+  }
+  yield service.actuel;
+  yield* service.changements;
+});
+
+/// Langue de l'appli : celle du profil ouvert, sinon celle du téléphone (null).
+final langueAppliProvider = Provider<String?>(
+  (ref) => ref.watch(profilApprenantProvider.select((p) => p.value?.profil?.langue)),
+);
 
 final reseauProvider = StreamProvider<TypeReseau>((ref) async* {
   final c = ref.watch(servicesProvider).connectivite;
@@ -167,6 +185,7 @@ class TelechargementsNotifier extends Notifier<Map<int, EtatTelechargement>> {
     if (reseau == TypeReseau.mobile && services.reglages.wifiSeulement) {
       return _maj(coursId, const EtatTelechargement(erreur: 'wifi'));
     }
+    await ouvert.profilApprenant.marquerTelechargement();
     final annulation = CancelToken();
     _annulations[coursId] = annulation;
     _maj(coursId, const EtatTelechargement(enCours: true));

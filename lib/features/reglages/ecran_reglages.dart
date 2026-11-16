@@ -27,6 +27,20 @@ class EcranReglages extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 Card(
+                  child: ListTile(
+                    key: const Key('lien_mon_profil'),
+                    leading: const Icon(Icons.badge_outlined, size: 30),
+                    title: Text(t.monProfilTitre, style: style.titleMedium),
+                    subtitle: switch (ref.watch(profilApprenantProvider).value?.profil?.completude) {
+                      final int c when c < 100 => Text(t.profilCompletude(c)),
+                      _ => null,
+                    },
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push('/reglages/profil'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
                   key: const Key('donnees_consommees'),
                   child: Padding(
                     padding: const EdgeInsets.all(16),

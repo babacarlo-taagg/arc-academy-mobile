@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:arc_academy/app.dart';
@@ -82,7 +83,13 @@ Future<ProviderContainer> lancerAppli(
   Services services, {
   Size taille = const Size(360, 740),
   double densite = 2,
+  Locale langueTelephone = const Locale('fr', 'SN'),
 }) async {
+  // Téléphone en français par défaut (le cadre de test simule un téléphone en anglais).
+  tester.platformDispatcher.localeTestValue = langueTelephone;
+  tester.platformDispatcher.localesTestValue = [langueTelephone];
+  addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+  addTearDown(tester.platformDispatcher.clearLocalesTestValue);
   tester.view.physicalSize = taille * densite;
   tester.view.devicePixelRatio = densite;
   addTearDown(tester.view.reset);
@@ -121,4 +128,11 @@ Future<void> terminer(WidgetTester tester, ProviderContainer conteneur) async {
   await tester.runAsync(() => conteneur.read(profilOuvertProvider.notifier).fermer());
   await tester.pumpWidget(const SizedBox.shrink());
   await tester.pump(const Duration(seconds: 20));
+}
+
+/// Le profil apprenant a déjà été lu une fois sur ce téléphone (gardé dans la base du profil).
+Future<void> memoriserProfilApprenant(Services services, Profil profil, Map<String, dynamic> profilApprenant) async {
+  final ouvert = await services.ouvrirProfil(profil, enArrierePlan: false);
+  await ouvert.db.ecrireMeta('profil', jsonEncode(profilApprenant));
+  await ouvert.fermer();
 }

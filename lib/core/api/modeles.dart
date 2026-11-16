@@ -347,3 +347,182 @@ class ResultatSynchro {
     etat: EtatSynchro.fromJson((j['etat'] as Map? ?? const {}).cast<String, dynamic>()),
   );
 }
+
+// ───────── Profil apprenant (contrat 0.3.0) ─────────
+
+/// Questions du profil, dans l'ordre où on les pose.
+abstract final class ChampProfil {
+  static const pays = 'pays';
+  static const metier = 'metier';
+  static const langue = 'langue';
+  static const institution = 'institution';
+  static const typeInstitution = 'typeInstitution';
+  static const niveau = 'niveau';
+  static const sexe = 'sexe';
+
+  /// Questions de l'écran « Ton institution » (après la première inscription à un cours).
+  static const groupeInstitution = {institution, typeInstitution, niveau};
+}
+
+class InstitutionProfil {
+  const InstitutionProfil({this.id, required this.nom});
+  final int? id;
+  final String nom;
+
+  factory InstitutionProfil.fromJson(Map<String, dynamic> j) =>
+      InstitutionProfil(id: j['id'] == null ? null : _int(j['id']), nom: j['nom'] as String? ?? '');
+
+  Map<String, dynamic> toJson() => {'id': id, 'nom': nom};
+}
+
+class ProfilApprenant {
+  const ProfilApprenant({
+    this.pays,
+    this.metier,
+    this.langue,
+    this.institution,
+    this.typeInstitution,
+    this.niveau,
+    this.sexe,
+    this.whatsapp,
+    this.whatsappAccord = false,
+    this.whatsappAccordVersion,
+    this.whatsappTexte = '',
+    this.completude = 0,
+    this.questionsAPoser = const [],
+    this.obligatoires = const [],
+  });
+
+  final String? pays;
+  final String? metier;
+  final String? langue;
+  final InstitutionProfil? institution;
+  final String? typeInstitution;
+  final String? niveau;
+  final String? sexe;
+  final String? whatsapp;
+  final bool whatsappAccord;
+  final String? whatsappAccordVersion;
+  final String whatsappTexte;
+  final int completude;
+  final List<String> questionsAPoser;
+  final List<String> obligatoires;
+
+  /// L'appli ne peut pas continuer tant que ces questions n'ont pas de réponse (pays, métier).
+  bool get bloquant => obligatoires.isNotEmpty;
+
+  /// Questions de l'écran « Ton institution » encore à poser.
+  List<String> get questionsInstitution => [
+    for (final q in questionsAPoser)
+      if (ChampProfil.groupeInstitution.contains(q)) q,
+  ];
+
+  static String? _texte(Object? v) => v is String && v.isNotEmpty ? v : null;
+
+  factory ProfilApprenant.fromJson(Map<String, dynamic> j) => ProfilApprenant(
+    pays: _texte(j['pays']),
+    metier: _texte(j['metier']),
+    langue: _texte(j['langue']),
+    institution: j['institution'] is Map
+        ? InstitutionProfil.fromJson((j['institution'] as Map).cast<String, dynamic>())
+        : null,
+    typeInstitution: _texte(j['typeInstitution']),
+    niveau: _texte(j['niveau']),
+    sexe: _texte(j['sexe']),
+    whatsapp: _texte(j['whatsapp']),
+    whatsappAccord: j['whatsappAccord'] == true,
+    whatsappAccordVersion: _texte(j['whatsappAccordVersion']),
+    whatsappTexte: j['whatsappTexte'] as String? ?? '',
+    completude: _int(j['completude']).clamp(0, 100),
+    questionsAPoser: [for (final q in (j['questionsAPoser'] as List? ?? const [])) '$q'].take(3).toList(),
+    obligatoires: [for (final q in (j['obligatoires'] as List? ?? const [])) '$q'],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'pays': pays,
+    'metier': metier,
+    'langue': langue,
+    'institution': institution?.toJson(),
+    'typeInstitution': typeInstitution,
+    'niveau': niveau,
+    'sexe': sexe,
+    'whatsapp': whatsapp,
+    'whatsappAccord': whatsappAccord,
+    'whatsappAccordVersion': whatsappAccordVersion,
+    'whatsappTexte': whatsappTexte,
+    'completude': completude,
+    'questionsAPoser': questionsAPoser,
+    'obligatoires': obligatoires,
+  };
+}
+
+class Choix {
+  const Choix(this.cle, this.libelle);
+  final String cle;
+  final String libelle;
+
+  factory Choix.fromJson(Map<String, dynamic> j) => Choix('${j['cle']}', j['libelle'] as String? ?? '${j['cle']}');
+  Map<String, dynamic> toJson() => {'cle': cle, 'libelle': libelle};
+}
+
+/// Listes de choix du profil, gardées sur le téléphone.
+class Referentiels {
+  const Referentiels({
+    required this.version,
+    this.pays = const [],
+    this.metiers = const [],
+    this.typesInstitution = const [],
+    this.niveaux = const [],
+    this.sexes = const [],
+    this.langues = const [],
+  });
+
+  final String version;
+  final List<Choix> pays;
+  final List<Choix> metiers;
+  final List<Choix> typesInstitution;
+  final List<Choix> niveaux;
+  final List<Choix> sexes;
+  final List<Choix> langues;
+
+  static List<Choix> _liste(Object? v) => [
+    for (final c in (v as List? ?? const [])) Choix.fromJson((c as Map).cast<String, dynamic>()),
+  ];
+
+  factory Referentiels.fromJson(Map<String, dynamic> j) => Referentiels(
+    version: j['version'] as String? ?? '',
+    pays: _liste(j['pays']),
+    metiers: _liste(j['metiers']),
+    typesInstitution: _liste(j['typesInstitution']),
+    niveaux: _liste(j['niveaux']),
+    sexes: _liste(j['sexes']),
+    langues: _liste(j['langues']),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'version': version,
+    for (final (cle, liste) in [
+      ('pays', pays),
+      ('metiers', metiers),
+      ('typesInstitution', typesInstitution),
+      ('niveaux', niveaux),
+      ('sexes', sexes),
+      ('langues', langues),
+    ])
+      cle: [for (final c in liste) c.toJson()],
+  };
+
+  /// Libellé d'une clé (la clé elle-même si la liste ne la connaît pas).
+  static String libelle(List<Choix> liste, String? cle) =>
+      cle == null ? '' : (liste.where((c) => c.cle == cle).firstOrNull?.libelle ?? cle);
+}
+
+class Organisation {
+  const Organisation({required this.id, required this.nom, this.pays});
+  final int id;
+  final String nom;
+  final String? pays;
+
+  factory Organisation.fromJson(Map<String, dynamic> j) =>
+      Organisation(id: _int(j['id']), nom: j['nom'] as String? ?? '', pays: j['pays'] as String?);
+}

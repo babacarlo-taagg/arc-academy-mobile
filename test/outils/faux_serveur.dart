@@ -46,6 +46,60 @@ class FauxServeur {
   final List<String?> suppressions = [];
 
   List<Map<String, dynamic>> formations = [];
+
+  // ───────── Profil (0.3.0) ─────────
+
+  /// Profil apprenant renvoyé par `/moi/profil` (complet par défaut : rien à demander).
+  Map<String, dynamic> profil = profilComplet();
+
+  static Map<String, dynamic> profilComplet() => {
+    'pays': 'SN',
+    'metier': 'infirmier',
+    'langue': 'fr',
+    'institution': {'id': 5, 'nom': 'Centre de santé de Kolda'},
+    'typeInstitution': 'centre_sante',
+    'niveau': 'district',
+    'sexe': null,
+    'whatsapp': null,
+    'whatsappAccord': false,
+    'whatsappAccordVersion': 'whatsapp-2026-11-v1',
+    'whatsappTexte': "J'accepte qu'ARC Academy m'écrive sur WhatsApp à ce numéro.",
+    'completude': 100,
+    'questionsAPoser': <String>[],
+    'obligatoires': <String>[],
+  };
+
+  /// Profil d'un nouvel apprenant : seulement le nom et l'e-mail.
+  static Map<String, dynamic> profilVide() => {
+    ...profilComplet(),
+    'pays': null,
+    'metier': null,
+    'langue': null,
+    'institution': null,
+    'typeInstitution': null,
+    'niveau': null,
+    'completude': 0,
+    'questionsAPoser': ['pays', 'metier', 'langue'],
+    'obligatoires': ['pays', 'metier'],
+  };
+
+  /// Corps des PATCH /moi/profil reçus.
+  final List<Map<String, dynamic>> modificationsProfil = [];
+
+  /// Langues demandées (en-tête Accept-Language) à chaque appel de /referentiels.
+  final List<String?> languesReferentiels = [];
+  final List<String> recherchesOrganisations = [];
+  String versionReferentiels = 'r1';
+  int referentielsNonModifies = 0;
+
+  final List<Map<String, dynamic>> organisations = [
+    {'id': 5, 'nom': 'Centre de santé de Kolda', 'pays': 'SN'},
+    {'id': 6, 'nom': 'Hôpital régional de Kolda', 'pays': 'SN'},
+    {'id': 7, 'nom': 'District sanitaire de Parakou', 'pays': 'BJ'},
+  ];
+
+  /// Simule une coupure : les requêtes vers le profil échouent sans réponse.
+  bool profilInjoignable = false;
   final Map<int, Map<String, dynamic>> manifestes = {};
   final Map<String, int> appels = {};
 
@@ -102,6 +156,41 @@ class FauxServeur {
       if (profilEfface) return await _probleme(r, 401, 'profil_efface');
       if (!_autorise(q)) return await _probleme(r, 401, 'jeton_expire');
       if (chemin == '/formations') return await _json(r, 200, {'formations': formations});
+      if (chemin == '/moi/profil' || chemin == '/referentiels' || chemin == '/organisations') {
+        if (profilInjoignable) {
+          final socket = await r.detachSocket(writeHeaders: false);
+          socket.destroy();
+          return;
+        }
+      }
+      if (chemin == '/moi/profil' && q.method == 'GET') return await _json(r, 200, profil);
+      if (chemin == '/moi/profil' && q.method == 'PATCH') {
+        final corps = (jsonDecode(await utf8.decodeStream(q)) as Map).cast<String, dynamic>();
+        modificationsProfil.add(corps);
+        _modifierProfil(corps);
+        return await _json(r, 200, profil);
+      }
+      if (chemin == '/referentiels') {
+        final langue = q.headers.value('accept-language');
+        languesReferentiels.add(langue);
+        if (q.headers.value('if-none-match') == versionReferentiels) {
+          referentielsNonModifies++;
+          return await _json(r, 304, null);
+        }
+        r.headers.set('etag', versionReferentiels);
+        return await _json(r, 200, referentiels(langue ?? 'fr', versionReferentiels));
+      }
+      if (chemin == '/organisations') {
+        final recherche = q.uri.queryParameters['recherche'] ?? '';
+        recherchesOrganisations.add(recherche);
+        if (recherche.length < 3) return await _probleme(r, 400, 'invalide');
+        return await _json(r, 200, {
+          'organisations': [
+            for (final o in organisations)
+              if ((o['nom'] as String).toLowerCase().contains(recherche.toLowerCase())) o,
+          ],
+        });
+      }
       if (chemin == '/moi/suppression') {
         final brut = await utf8.decodeStream(q);
         final corps = brut.isEmpty ? const {} : jsonDecode(brut) as Map;
@@ -126,6 +215,89 @@ class FauxServeur {
     } catch (_) {
       // connexion déjà coupée volontairement
     }
+  }
+
+  /// Listes de choix (un échantillon).
+  static Map<String, dynamic> referentiels(String langue, String version) {
+    final en = langue == 'en';
+    List<Map<String, String>> l(List<(String, String, String)> c) => [
+      for (final (cle, fr, anglais) in c) {'cle': cle, 'libelle': en ? anglais : fr},
+    ];
+    return {
+      'version': version,
+      'pays': l([
+        ('BJ', 'Bénin', 'Benin'),
+        ('BF', 'Burkina Faso', 'Burkina Faso'),
+        ('CI', "Côte d'Ivoire", "Côte d'Ivoire"),
+        ('GN', 'Guinée', 'Guinea'),
+        ('ML', 'Mali', 'Mali'),
+        ('NE', 'Niger', 'Niger'),
+        ('SN', 'Sénégal', 'Senegal'),
+        ('TG', 'Togo', 'Togo'),
+      ]),
+      'metiers': l([
+        ('infirmier', 'Infirmier(ère)', 'Nurse'),
+        ('sage_femme', 'Sage-femme', 'Midwife'),
+        ('pharmacien', 'Pharmacien(ne)', 'Pharmacist'),
+        ('agent_communautaire', 'Agent de santé communautaire', 'Community health worker'),
+      ]),
+      'typesInstitution': l([
+        ('centre_sante', 'Centre de santé', 'Health centre'),
+        ('hopital', 'Hôpital', 'Hospital'),
+        ('ministere', 'Ministère', 'Ministry'),
+      ]),
+      'niveaux': l([
+        ('communautaire', 'Communautaire', 'Community'),
+        ('district', 'District', 'District'),
+        ('regional', 'Régional', 'Regional'),
+        ('national', 'National', 'National'),
+      ]),
+      'sexes': l([
+        ('femme', 'Femme', 'Woman'),
+        ('homme', 'Homme', 'Man'),
+        ('ne_repond_pas', 'Préfère ne pas répondre', 'Prefer not to say'),
+      ]),
+      'langues': l([('fr', 'Français', 'French'), ('en', 'English', 'English')]),
+    };
+  }
+
+  /// Applique un PATCH comme le serveur : champs envoyés, questions répondues ou passées retirées.
+  void _modifierProfil(Map<String, dynamic> m) {
+    final repondus = <String>{...((m['ignorer'] as List?) ?? const []).cast<String>()};
+    for (final cle in ['pays', 'metier', 'langue', 'typeInstitution', 'niveau', 'sexe', 'whatsapp']) {
+      if (m.containsKey(cle)) {
+        profil[cle] = m[cle];
+        repondus.add(cle);
+      }
+    }
+    if (m.containsKey('institutionId') && m['institutionId'] != null) {
+      final o = organisations.firstWhere((o) => o['id'] == m['institutionId']);
+      profil['institution'] = {'id': o['id'], 'nom': o['nom']};
+      repondus.add('institution');
+    } else if (m['institutionNom'] is String) {
+      profil['institution'] = {'id': null, 'nom': m['institutionNom']};
+      repondus.add('institution');
+    }
+    if (m.containsKey('whatsappAccord')) {
+      profil['whatsappAccord'] = m['whatsappAccord'] == true;
+    }
+    profil['questionsAPoser'] = [
+      for (final q in profil['questionsAPoser'] as List)
+        if (!repondus.contains(q)) q,
+    ];
+    profil['obligatoires'] = [
+      for (final q in profil['obligatoires'] as List)
+        if (!repondus.contains(q)) q,
+    ];
+    final remplis = [
+      'pays',
+      'metier',
+      'langue',
+      'institution',
+      'typeInstitution',
+      'niveau',
+    ].where((c) => profil[c] != null).length;
+    profil['completude'] = (remplis * 100 / 6).round();
   }
 
   Map<String, dynamic> _session() {

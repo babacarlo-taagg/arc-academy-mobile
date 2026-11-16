@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_en.dart';
 import 'app_localizations_fr.dart';
 
 // ignore_for_file: type=lint
@@ -89,7 +90,7 @@ abstract class AppLocalizations {
   ];
 
   /// A list of this localizations delegate's supported locales.
-  static const List<Locale> supportedLocales = <Locale>[Locale('fr')];
+  static const List<Locale> supportedLocales = <Locale>[Locale('en'), Locale('fr')];
 
   /// No description provided for @nomAppli.
   ///
@@ -828,6 +829,246 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'J\'ai compris'**
   String get suppressionOk;
+
+  /// No description provided for @profilTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton profil'**
+  String get profilTitre;
+
+  /// No description provided for @profilIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Deux questions pour que tes formations correspondent à ton pays et à ton métier.'**
+  String get profilIntro;
+
+  /// No description provided for @profilPays.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pays où tu travailles'**
+  String get profilPays;
+
+  /// No description provided for @profilPaysChoisir.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisis ton pays'**
+  String get profilPaysChoisir;
+
+  /// No description provided for @profilPaysRecherche.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chercher un pays'**
+  String get profilPaysRecherche;
+
+  /// No description provided for @profilMetier.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton métier'**
+  String get profilMetier;
+
+  /// No description provided for @profilLangue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Langue de l\'appli'**
+  String get profilLangue;
+
+  /// No description provided for @profilContinuer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Continuer'**
+  String get profilContinuer;
+
+  /// No description provided for @profilManque.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisis ton pays et ton métier pour continuer.'**
+  String get profilManque;
+
+  /// No description provided for @profilChargement.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préparation de ton profil…'**
+  String get profilChargement;
+
+  /// No description provided for @profilReseauNecessaire.
+  ///
+  /// In fr, this message translates to:
+  /// **'Il faut du réseau une fois pour préparer ton profil. Ensuite, l\'appli marche sans réseau.'**
+  String get profilReseauNecessaire;
+
+  /// No description provided for @profilAucunResultat.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun résultat.'**
+  String get profilAucunResultat;
+
+  /// No description provided for @profilNonRenseigne.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non renseigné'**
+  String get profilNonRenseigne;
+
+  /// No description provided for @profilEnregistre.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est enregistré.'**
+  String get profilEnregistre;
+
+  /// No description provided for @profilEnregistreHorsLigne.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistré sur le téléphone. Envoi à ARC dès que le réseau revient.'**
+  String get profilEnregistreHorsLigne;
+
+  /// No description provided for @profilCompletude.
+  ///
+  /// In fr, this message translates to:
+  /// **'Profil complété à {pourcent} %'**
+  String profilCompletude(int pourcent);
+
+  /// No description provided for @profilCompleter.
+  ///
+  /// In fr, this message translates to:
+  /// **'Compléter mon profil'**
+  String get profilCompleter;
+
+  /// No description provided for @enregistrer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get enregistrer;
+
+  /// No description provided for @institutionTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ton institution'**
+  String get institutionTitre;
+
+  /// No description provided for @institutionIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Où travailles-tu ? ARC pourra mieux suivre et soutenir ton équipe.'**
+  String get institutionIntro;
+
+  /// No description provided for @institutionRepondre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Répondre'**
+  String get institutionRepondre;
+
+  /// No description provided for @institutionPlusTard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus tard'**
+  String get institutionPlusTard;
+
+  /// No description provided for @institutionNom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nom de ton institution'**
+  String get institutionNom;
+
+  /// No description provided for @institutionRechercheAide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tape au moins 3 lettres pour chercher.'**
+  String get institutionRechercheAide;
+
+  /// No description provided for @institutionHorsLigne.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sans réseau : tape le nom, il sera envoyé plus tard.'**
+  String get institutionHorsLigne;
+
+  /// No description provided for @institutionUtiliserNom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas dans la liste : garder « {nom} »'**
+  String institutionUtiliserNom(String nom);
+
+  /// No description provided for @institutionType.
+  ///
+  /// In fr, this message translates to:
+  /// **'Type d\'institution'**
+  String get institutionType;
+
+  /// No description provided for @institutionNiveau.
+  ///
+  /// In fr, this message translates to:
+  /// **'Niveau'**
+  String get institutionNiveau;
+
+  /// No description provided for @sexeTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu es…'**
+  String get sexeTitre;
+
+  /// No description provided for @sexeAide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Facultatif. Sert seulement à des statistiques anonymes.'**
+  String get sexeAide;
+
+  /// No description provided for @sexePasser.
+  ///
+  /// In fr, this message translates to:
+  /// **'Passer'**
+  String get sexePasser;
+
+  /// No description provided for @monProfilTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mon profil'**
+  String get monProfilTitre;
+
+  /// No description provided for @monProfilSexe.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sexe'**
+  String get monProfilSexe;
+
+  /// No description provided for @whatsappTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'WhatsApp'**
+  String get whatsappTitre;
+
+  /// No description provided for @whatsappNumero.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro WhatsApp'**
+  String get whatsappNumero;
+
+  /// No description provided for @whatsappAide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Avec l\'indicatif du pays, par exemple +221771234567'**
+  String get whatsappAide;
+
+  /// No description provided for @whatsappInvalide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Numéro incomplet : commence par + et l\'indicatif du pays.'**
+  String get whatsappInvalide;
+
+  /// No description provided for @whatsappAccordActif.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tu as accepté qu\'ARC t\'écrive sur WhatsApp.'**
+  String get whatsappAccordActif;
+
+  /// No description provided for @whatsappRetirer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer mon accord'**
+  String get whatsappRetirer;
+
+  /// No description provided for @whatsappAccordRetire.
+  ///
+  /// In fr, this message translates to:
+  /// **'Accord retiré : ARC ne t\'écrira plus sur WhatsApp.'**
+  String get whatsappAccordRetire;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -839,7 +1080,7 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['fr'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['en', 'fr'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -848,6 +1089,8 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
 AppLocalizations lookupAppLocalizations(Locale locale) {
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'en':
+      return AppLocalizationsEn();
     case 'fr':
       return AppLocalizationsFr();
   }

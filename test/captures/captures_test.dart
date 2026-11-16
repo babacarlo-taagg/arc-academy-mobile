@@ -205,6 +205,66 @@ void main() {
 
   testWidgets('captures des écrans', (tester) => parcours(tester));
 
+  testWidgets('captures du profil progressif', (tester) async {
+    Future<void> capture(String nom) async {
+      await attendre(tester, fois: 8);
+      await expectLater(find.byType(AppliArc), matchesGoldenFile('../../docs/captures/$nom.png'));
+    }
+
+    await chargerPolices();
+    serveur.profil = FauxServeur.profilVide();
+    final services = servicesDeTest(dossier, serveur.url);
+    late String id;
+    await tester.runAsync(() async {
+      final p = await services.profils.ouvrirSession(sessionDeTest(42, 'Awa Diop'));
+      id = p.id;
+      await services.profils.definirPin(p.id, '1234');
+    });
+    final conteneur = await lancerAppli(tester, services);
+    await tester.runAsync(() async {
+      await conteneur.read(profilOuvertProvider.notifier).ouvrir((await services.profils.profil(id))!);
+      final ouvert = conteneur.read(profilOuvertProvider)!;
+      await ouvert.mettreAJourFormations();
+      await ouvert.profilApprenant.rafraichir();
+    });
+    final routeur = conteneur.read(routeurProvider);
+    routeur.go('/formations');
+    await capture('10_ton_profil');
+
+    // Pays et métier donnés ; le serveur propose ensuite l'institution et le sexe.
+    serveur.profil = {
+      ...FauxServeur.profilComplet(),
+      'institution': null,
+      'typeInstitution': null,
+      'niveau': null,
+      'completude': 50,
+      'questionsAPoser': ['institution', 'typeInstitution', 'niveau'],
+    };
+    await tester.runAsync(() async {
+      final service = conteneur.read(profilOuvertProvider)!.profilApprenant;
+      await service.rafraichir();
+      await service.marquerTelechargement();
+    });
+    routeur.go('/formations');
+    await capture('11_mes_formations_profil');
+    routeur.push('/cours/12');
+    await capture('12_proposition_institution');
+    routeur.push('/institution');
+    await capture('13_ton_institution');
+    serveur.profil = {
+      ...serveur.profil,
+      'questionsAPoser': ['sexe'],
+    };
+    await tester.runAsync(() => conteneur.read(profilOuvertProvider)!.profilApprenant.rafraichir());
+    routeur.go('/formations');
+    await capture('14_question_sexe');
+    routeur.go('/reglages');
+    await attendre(tester);
+    routeur.push('/reglages/profil');
+    await capture('15_mon_profil');
+    await terminer(tester, conteneur);
+  });
+
   // Fiches des stores. Google Play : rapport hauteur/largeur de 2 au plus (1080×1920 ici).
   // App Store : captures d'iPhone 6,9 pouces (1320×2868).
   const ecransStores = {'01_profils', '03_connexion', '05_mes_formations', '06_cours', '08_reglages'};

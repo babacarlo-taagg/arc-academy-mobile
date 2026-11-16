@@ -116,6 +116,8 @@ void main() {
       final p = await services.profils.ouvrirSession(sessionDeTest(1, 'Awa Diop'));
       id = p.id;
       await services.profils.definirPin(p.id, '1234');
+      // Profil déjà lu lors d'un passage réseau : on n'est pas bloqué hors ligne.
+      await memoriserProfilApprenant(services, p, FauxServeur.profilComplet());
     });
     final conteneur = await lancerAppli(tester, services);
     await tester.tap(find.byKey(Key('profil_$id')));

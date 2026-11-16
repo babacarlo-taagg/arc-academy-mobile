@@ -12,6 +12,7 @@ import '../../core/services.dart';
 import '../../core/theme.dart';
 import '../../l10n/app_localizations.dart';
 import '../../widgets/communs.dart';
+import '../profil/ecrans_profil.dart';
 import '../../widgets/indicateur_synchro.dart';
 
 /// « Mes formations ».
@@ -57,6 +58,8 @@ class EcranFormations extends ConsumerWidget {
                     Encadre(texte: t.sessionAReprendre, attention: true),
                     const SizedBox(height: 12),
                   ],
+                  const BarreCompletude(),
+                  const CarteSexe(),
                   if (formations.isEmpty) Encadre(texte: t.formationsVide),
                   for (final f in formations) ...[CarteFormation(formation: f), const SizedBox(height: 14)],
                 ],
@@ -163,6 +166,7 @@ class EcranCours extends ConsumerWidget {
                   const SizedBox(height: 16),
                 ],
                 PanneauTelechargement(coursId: coursId, formation: formation, manifest: manifest.value),
+                const CarteInstitution(),
                 const SizedBox(height: 20),
                 if (manifest.isLoading && manifest.value == null)
                   const Center(child: CircularProgressIndicator())

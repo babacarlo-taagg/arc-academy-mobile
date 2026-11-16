@@ -4,22 +4,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/api/modeles.dart';
+import 'core/profil/service_profil.dart';
 import 'core/providers.dart';
 import 'core/theme.dart';
 import 'features/connexion/ecrans_connexion.dart';
 import 'features/formations/ecrans_formations.dart';
 import 'features/lecteur/ecran_lecteur.dart';
+import 'features/profil/ecrans_profil.dart';
 import 'features/profils/ecrans_profils.dart';
 import 'features/reglages/ecran_reglages.dart';
 import 'features/reglages/ecran_suppression.dart';
 import 'l10n/app_localizations.dart';
 
 /// Écrans qui demandent un profil déverrouillé.
-const _routesProfil = ['/formations', '/cours', '/lecon', '/reglages'];
+const _routesProfil = ['/formations', '/cours', '/lecon', '/reglages', '/ton-profil', '/institution'];
+
+/// Écran « Ton profil » (pays et métier), obligatoire tant qu'ils manquent.
+const _routeProfilObligatoire = '/ton-profil';
 
 final routeurProvider = Provider<GoRouter>((ref) {
   final rafraichir = ValueNotifier<int>(0);
   ref.listen(profilOuvertProvider, (_, _) => rafraichir.value++);
+  ref.listen(profilApprenantProvider.select((p) => p.value?.etat), (_, _) => rafraichir.value++);
   ref.onDispose(rafraichir.dispose);
   return GoRouter(
     initialLocation: '/',
@@ -28,6 +34,11 @@ final routeurProvider = Provider<GoRouter>((ref) {
       final chemin = etat.matchedLocation;
       final ouvert = ref.read(profilOuvertProvider) != null;
       if (_routesProfil.any(chemin.startsWith) && !ouvert) return '/';
+      if (ouvert && _routesProfil.any(chemin.startsWith)) {
+        final etat = ref.read(profilOuvertProvider)!.profilApprenant.actuel.etat;
+        if (etat != EtatProfil.pret && chemin != _routeProfilObligatoire) return _routeProfilObligatoire;
+        if (etat == EtatProfil.pret && chemin == _routeProfilObligatoire) return '/formations';
+      }
       if (chemin == '/') {
         if (ouvert) return '/formations';
         final profils = await ref.read(servicesProvider).profils.profils();
@@ -58,6 +69,8 @@ final routeurProvider = Provider<GoRouter>((ref) {
         builder: (_, e) => EcranCreerPin(profilId: e.pathParameters['id']!),
       ),
       GoRoute(path: '/formations', builder: (_, _) => const EcranFormations()),
+      GoRoute(path: _routeProfilObligatoire, builder: (_, _) => const EcranProfilObligatoire()),
+      GoRoute(path: '/institution', builder: (_, _) => const EcranInstitution()),
       GoRoute(
         path: '/cours/:id',
         builder: (_, e) => EcranCours(coursId: int.parse(e.pathParameters['id']!)),
@@ -71,6 +84,7 @@ final routeurProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/reglages', builder: (_, _) => const EcranReglages()),
       GoRoute(path: '/reglages/suppression', builder: (_, _) => const EcranSuppression()),
+      GoRoute(path: '/reglages/profil', builder: (_, _) => const EcranMonProfil()),
     ],
   );
 });
@@ -85,8 +99,13 @@ class AppliArc extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: construireTheme(),
       routerConfig: ref.watch(routeurProvider),
-      locale: const Locale('fr'),
+      // La langue du profil, sinon celle du téléphone (anglais ou, à défaut, français).
+      locale: switch (ref.watch(langueAppliProvider)) {
+        final String l => Locale(l),
+        null => null,
+      },
       supportedLocales: AppLocalizations.supportedLocales,
+      localeResolutionCallback: (locale, _) => Locale(locale?.languageCode == 'en' ? 'en' : 'fr'),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

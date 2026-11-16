@@ -50,3 +50,18 @@
    90 jours). Hors ligne, l'appli marche sans jeton. Session refusée par le serveur : les données restent, un
    message demande de se reconnecter par e-mail pour envoyer la progression.
 10. **Données consommées** : chaque octet échangé avec ARC est compté par mois (Réglages).
+
+## Profil progressif (contrat 0.3.0)
+- `GET /moi/profil` est lu à chaque passage réseau et gardé dans la base chiffrée du profil (table `meta`, clé `profil`).
+  Les listes de choix (`/referentiels`) sont gardées par langue (`referentiels:fr`, `referentiels:en`) et redemandées
+  avec `If-None-Match` (réponse `304` si rien n'a changé).
+- Une réponse donnée sans réseau est appliquée tout de suite sur le téléphone, puis gardée dans `profil:en_attente`
+  (les réponses successives sont fusionnées) et envoyée en un seul `PATCH` au retour du réseau. Le `PATCH` peut être
+  rejoué sans risque. Une réponse refusée par le serveur (400) n'est pas rejouée.
+- Écran « Ton profil » (pays, métier, langue) : obligatoire tant que `obligatoires` n'est pas vide. Si le profil n'a
+  jamais été lu et qu'il n'y a pas de réseau, l'appli explique qu'il en faut une fois ; s'il a déjà été lu, elle
+  ne bloque jamais hors ligne.
+- Questions facultatives : seulement celles de `questionsAPoser` (3 au plus). « Ton institution » est proposée sous
+  le bouton de téléchargement après le premier téléchargement d'un cours ; « Tu es… » dans « Mes formations ».
+  « Plus tard » et « Passer » envoient `ignorer`.
+- Langue de l'appli : celle du profil, sinon celle du téléphone (anglais, sinon français).

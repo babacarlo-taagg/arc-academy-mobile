@@ -267,6 +267,51 @@ class ApiClient {
     return SuppressionEnregistree.fromJson(j);
   }
 
+  // ───────── Profil (0.3.0) ─────────
+
+  Options _langue(String? langue) => Options(headers: {'Accept-Language': ?langue});
+
+  Future<ProfilApprenant> lireProfil({String? langue}) async => ProfilApprenant.fromJson(
+    await _appel(() => dio.get<Map<String, dynamic>>('/moi/profil', options: _langue(langue))),
+  );
+
+  /// Envoie seulement les champs donnés (PATCH). Rejouer la même modification ne change rien côté serveur.
+  Future<ProfilApprenant> modifierProfil(Map<String, dynamic> modification, {String? langue}) async =>
+      ProfilApprenant.fromJson(
+        await _appel(
+          () => dio.patch<Map<String, dynamic>>('/moi/profil', data: modification, options: _langue(langue)),
+        ),
+      );
+
+  /// Listes de choix, ou `null` si la version locale est à jour (304).
+  Future<Referentiels?> referentiels({String? langue, String? versionLocale}) async {
+    final etag = (versionLocale == null || versionLocale.isEmpty) ? null : versionLocale;
+    try {
+      final r = await dio.get<Map<String, dynamic>>(
+        '/referentiels',
+        options: Options(
+          headers: {'Accept-Language': ?langue, 'If-None-Match': ?etag},
+          validateStatus: (s) => s != null && (s < 300 || s == 304),
+        ),
+      );
+      if (r.statusCode == 304 || r.data == null) return null;
+      return Referentiels.fromJson(r.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// Institutions connues d'ARC dont le nom contient `recherche` (3 caractères au moins).
+  Future<List<Organisation>> chercherOrganisations(String recherche) async {
+    final j = await _appel(
+      () => dio.get<Map<String, dynamic>>('/organisations', queryParameters: {'recherche': recherche}),
+    );
+    return [
+      for (final o in (j['organisations'] as List? ?? const []))
+        Organisation.fromJson((o as Map).cast<String, dynamic>()),
+    ];
+  }
+
   Future<List<Formation>> formations() async {
     final j = await _appel(() => dio.get<Map<String, dynamic>>('/formations'));
     return [
