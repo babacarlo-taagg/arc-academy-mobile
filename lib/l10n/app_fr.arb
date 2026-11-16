@@ -191,5 +191,24 @@
   "whatsappInvalide": "Numéro incomplet : commence par + et l'indicatif du pays.",
   "whatsappAccordActif": "Tu as accepté qu'ARC t'écrive sur WhatsApp.",
   "whatsappRetirer": "Retirer mon accord",
-  "whatsappAccordRetire": "Accord retiré : ARC ne t'écrira plus sur WhatsApp."
+  "whatsappAccordRetire": "Accord retiré : ARC ne t'écrira plus sur WhatsApp.",
+
+  "boiteTitre": "Mes messages",
+  "boiteVide": "Pas encore de message d'ARC.",
+  "boiteToutLu": "Tout marquer comme lu",
+  "boiteNonLu": "Non lu",
+  "notifsTitre": "Notifications",
+  "notifsIntro": "Choisis ce que tu reçois, et comment.",
+  "notifsReseau": "Il faut du réseau une fois pour voir tes choix.",
+  "notifsEnAttente": "Tes changements partiront au retour du réseau.",
+  "notifsWhatsappIndisponible": "Pour WhatsApp, ajoute ton numéro et ton accord dans Mon profil.",
+  "notifsPushIndisponible": "Pas disponible dans cette version de l'appli.",
+  "notifsPermissionRefusee": "Autorise les notifications d'ARC Academy dans les réglages du téléphone.",
+  "pushPropositionTitre": "Recevoir les rappels de tes cours sur ce téléphone ?",
+  "pushPropositionAide": "Une fois par semaine au plus. Tu peux changer d'avis dans Réglages.",
+  "pushOui": "Oui",
+  "pushNon": "Non merci",
+  "pushActive": "C'est noté : tu recevras tes rappels ici.",
+  "reglagesNotifications": "Notifications",
+  "reglagesNotificationsAide": "Rappels et messages d'ARC"
 }

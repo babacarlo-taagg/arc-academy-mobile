@@ -162,5 +162,24 @@
   "whatsappInvalide": "Incomplete number: start with + and the country code.",
   "whatsappAccordActif": "You agreed that ARC may write to you on WhatsApp.",
   "whatsappRetirer": "Withdraw my consent",
-  "whatsappAccordRetire": "Consent withdrawn: ARC will no longer write to you on WhatsApp."
+  "whatsappAccordRetire": "Consent withdrawn: ARC will no longer write to you on WhatsApp.",
+
+  "boiteTitre": "My messages",
+  "boiteVide": "No message from ARC yet.",
+  "boiteToutLu": "Mark all as read",
+  "boiteNonLu": "Unread",
+  "notifsTitre": "Notifications",
+  "notifsIntro": "Choose what you receive, and how.",
+  "notifsReseau": "You need a connection once to see your choices.",
+  "notifsEnAttente": "Your changes will be sent when you are back online.",
+  "notifsWhatsappIndisponible": "For WhatsApp, add your number and your consent in My profile.",
+  "notifsPushIndisponible": "Not available in this version of the app.",
+  "notifsPermissionRefusee": "Allow ARC Academy notifications in your phone settings.",
+  "pushPropositionTitre": "Get reminders about your courses on this phone?",
+  "pushPropositionAide": "At most once a week. You can change your mind in Settings.",
+  "pushOui": "Yes",
+  "pushNon": "No thanks",
+  "pushActive": "Done: you will get your reminders here.",
+  "reglagesNotifications": "Notifications",
+  "reglagesNotificationsAide": "Reminders and messages from ARC"
 }

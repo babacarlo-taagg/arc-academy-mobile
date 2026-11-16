@@ -60,8 +60,10 @@ class _EcranSuppressionState extends ConsumerState<EcranSuppression> {
           actions: [FilledButton(onPressed: () => Navigator.of(c).pop(), child: Text(t.suppressionOk))],
         ),
       );
+      // L'écran peut disparaître pendant l'effacement (le routeur quitte les écrans du profil) : on garde le routeur.
+      final routeur = mounted ? GoRouter.of(context) : null;
       await ref.read(profilOuvertProvider.notifier).effacer();
-      if (mounted) context.go('/');
+      routeur?.go('/');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {

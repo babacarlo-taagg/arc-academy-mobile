@@ -8,6 +8,7 @@ import 'api/modeles.dart';
 import 'contenus/depot_contenus.dart';
 import 'contenus/telechargeur.dart';
 import 'db/base.dart';
+import 'notifications/service_notifications.dart';
 import 'profil/service_profil.dart';
 import 'profils/profils.dart';
 import 'reglages/reglages.dart';
@@ -58,6 +59,7 @@ class ProfilOuvertNotifier extends Notifier<ProfilOuvert?> {
       },
     );
     await ouvert.profilApprenant.charger();
+    await ouvert.notifications.charger();
     ouvert.activer();
     state = ouvert;
   }
@@ -120,6 +122,26 @@ final profilApprenantProvider = StreamProvider<InstantaneProfil?>((ref) async* {
   yield service.actuel;
   yield* service.changements;
 });
+
+/// Boîte de réception et préférences de notification du profil ouvert, réémises à chaque changement.
+final notificationsProvider = StreamProvider<InstantaneNotifications?>((ref) async* {
+  final service = ref.watch(profilOuvertProvider)?.notifications;
+  if (service == null) {
+    yield null;
+    return;
+  }
+  yield service.actuel;
+  yield* service.changements;
+});
+
+/// Profil à ouvrir après une notification touchée (son `apprenantId`), le temps de taper le code secret.
+final ouvertureNotificationProvider = NotifierProvider<OuvertureNotification, int?>(OuvertureNotification.new);
+
+class OuvertureNotification extends Notifier<int?> {
+  @override
+  int? build() => null;
+  void attendre(int? apprenantId) => state = apprenantId;
+}
 
 /// Langue de l'appli : celle du profil ouvert, sinon celle du téléphone (null).
 final langueAppliProvider = Provider<String?>(

@@ -312,6 +312,43 @@ class ApiClient {
     ];
   }
 
+  // ───────── Notifications (0.4.0) ─────────
+
+  /// Jeton Firebase de ce téléphone (commun à ses profils). Rejouer le même jeton ne change rien.
+  Future<void> enregistrerJetonPush(String jeton, {String? plateforme}) =>
+      _appel(() => dio.put<dynamic>('/appareil/push', data: {'jeton': jeton, 'plateforme': ?plateforme}));
+
+  /// Plus de notification sur ce téléphone (déconnexion du dernier profil).
+  Future<void> retirerJetonPush() => _appel(() => dio.delete<dynamic>('/appareil/push'));
+
+  Future<BoiteDeReception> listerNotifications({String? langue}) async => BoiteDeReception.fromJson(
+    await _appel(() => dio.get<Map<String, dynamic>>('/notifications', options: _langue(langue))),
+  );
+
+  Future<void> marquerNotificationsLues(List<int> ids) =>
+      _appel(() => dio.post<dynamic>('/notifications/lues', data: {'ids': ids}));
+
+  Future<PreferencesNotifications> lirePreferencesNotifications({String? langue}) async =>
+      PreferencesNotifications.fromJson(
+        await _appel(() => dio.get<Map<String, dynamic>>('/moi/preferences-notifications', options: _langue(langue))),
+      );
+
+  /// Seules les lignes envoyées changent. Rejouer la même modification ne change rien.
+  Future<PreferencesNotifications> modifierPreferencesNotifications(
+    List<PreferenceNotification> preferences, {
+    String? langue,
+  }) async => PreferencesNotifications.fromJson(
+    await _appel(
+      () => dio.put<Map<String, dynamic>>(
+        '/moi/preferences-notifications',
+        data: {
+          'preferences': [for (final p in preferences) p.toJson()],
+        },
+        options: _langue(langue),
+      ),
+    ),
+  );
+
   Future<List<Formation>> formations() async {
     final j = await _appel(() => dio.get<Map<String, dynamic>>('/formations'));
     return [

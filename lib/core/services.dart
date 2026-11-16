@@ -17,9 +17,11 @@ import 'contenus/depot_contenus.dart';
 import 'contenus/telechargeur.dart';
 import 'db/base.dart';
 import 'env.dart';
+import 'notifications/service_notifications.dart';
 import 'profil/service_profil.dart';
 import 'profils/coffre_fort.dart';
 import 'profils/profils.dart';
+import 'push/service_push.dart';
 import 'reglages/reglages.dart';
 import 'serveur_local/serveur_local.dart';
 import 'sync/journal.dart';
@@ -68,6 +70,7 @@ class Services {
     this.plateforme = 'android',
     this.basesEnArrierePlan = true,
     this.langueTelephone = langueDuTelephone,
+    this.push = const ServicePushAbsent(),
   });
 
   final CoffreFort coffre;
@@ -90,6 +93,9 @@ class Services {
   /// Langue du téléphone (`fr` ou `en`), utilisée tant que le profil n'en a pas.
   final String Function() langueTelephone;
 
+  /// Notifications sur le téléphone (Firebase), absentes si l'appli est construite sans ses réglages.
+  final ServicePush push;
+
   /// Client sans session : demander un code, ouvrir une session, aide.
   late final ApiClient apiPublic = ApiClient(
     baseUrl: baseUrl,
@@ -99,6 +105,7 @@ class Services {
   );
 
   static Future<Services> demarrer() async {
+    final push = await ServicePushFirebase.demarrer();
     final support = await getApplicationSupportDirectory();
     final coffre = CoffreFortSysteme();
     final depot = DepotContenus(Directory(p.join(support.path, 'contenus')));
@@ -126,6 +133,7 @@ class Services {
         }
       },
       plateforme: defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+      push: push,
     );
     await services.serveurLocal.demarrer();
     return services;
@@ -166,6 +174,7 @@ class Services {
       onSessionFermee: surSessionFermee,
     );
     final moteur = MoteurSynchro(db: db, api: api, journal: journal, appareilId: await profils.appareilId());
+    final profilApprenant = ServiceProfil(db: db, api: api, langueTelephone: langueTelephone);
     ouvert = ProfilOuvert(
       services: this,
       profil: profil,
@@ -174,7 +183,14 @@ class Services {
       journal: journal,
       moteur: moteur,
       telechargeur: Telechargeur(depot: depot, api: api, placeLibre: placeLibre),
-      profilApprenant: ServiceProfil(db: db, api: api, langueTelephone: langueTelephone),
+      profilApprenant: profilApprenant,
+      notifications: ServiceNotifications(
+        db: db,
+        api: api,
+        push: push,
+        plateforme: plateforme,
+        langue: () => profilApprenant.langue,
+      ),
     );
     return ouvert;
   }
@@ -228,6 +244,7 @@ class ProfilOuvert {
     required this.moteur,
     required this.telechargeur,
     required this.profilApprenant,
+    required this.notifications,
   });
 
   final Services services;
@@ -240,6 +257,9 @@ class ProfilOuvert {
 
   /// Pays, métier, institution… (profil progressif).
   final ServiceProfil profilApprenant;
+
+  /// Boîte de réception et préférences de notification.
+  final ServiceNotifications notifications;
 
   bool _ferme = false;
   bool get estFerme => _ferme;
@@ -267,6 +287,7 @@ class ProfilOuvert {
     _reseau = services.connectivite.changements.listen((r) {
       if (r != TypeReseau.aucun) unawaited(rafraichir());
     });
+    notifications.activer();
     unawaited(rafraichir());
   }
 
@@ -288,6 +309,7 @@ class ProfilOuvert {
     } on ApiException {
       // hors ligne ou session à renouveler : on garde la copie locale
     }
+    if (!_ferme) await notifications.rafraichir();
   }
 
   Future<void> mettreAJourFormations() async {
@@ -323,6 +345,7 @@ class ProfilOuvert {
     _attenteEnvoi?.cancel();
     await _reseau?.cancel();
     await profilApprenant.fermer();
+    await notifications.fermer();
     services.serveurLocal.surCommit = null;
     services.serveurLocal.configScorm = null;
     await moteur.fermer();

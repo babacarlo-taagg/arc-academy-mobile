@@ -8,6 +8,7 @@ import 'package:arc_academy/core/contenus/depot_contenus.dart';
 import 'package:arc_academy/core/profils/coffre_fort.dart';
 import 'package:arc_academy/core/profils/profils.dart';
 import 'package:arc_academy/core/providers.dart';
+import 'package:arc_academy/core/push/service_push.dart';
 import 'package:arc_academy/core/reglages/reglages.dart';
 import 'package:arc_academy/core/serveur_local/serveur_local.dart';
 import 'package:arc_academy/core/services.dart';
@@ -45,7 +46,12 @@ void preparerReseauReel() {
 }
 
 /// Services du téléphone pour les tests : dossiers temporaires, coffre-fort en mémoire, faux serveur.
-Services servicesDeTest(Directory dossier, String baseUrl, {ConnectiviteTest? connectivite}) {
+Services servicesDeTest(
+  Directory dossier,
+  String baseUrl, {
+  ConnectiviteTest? connectivite,
+  ServicePush push = const ServicePushAbsent(),
+}) {
   final coffre = CoffreFortMemoire();
   final depot = DepotContenus(Directory('${dossier.path}/contenus'));
   return Services(
@@ -60,6 +66,7 @@ Services servicesDeTest(Directory dossier, String baseUrl, {ConnectiviteTest? co
     placeLibre: () async => 2 * 1024 * 1024 * 1024,
     basesEnArrierePlan: false,
     adaptateur: _clientReel == null ? null : IOHttpClientAdapter(createHttpClient: () => _clientReel!),
+    push: push,
   );
 }
 
@@ -135,4 +142,48 @@ Future<void> memoriserProfilApprenant(Services services, Profil profil, Map<Stri
   final ouvert = await services.ouvrirProfil(profil, enArrierePlan: false);
   await ouvert.db.ecrireMeta('profil', jsonEncode(profilApprenant));
   await ouvert.fermer();
+}
+
+/// Faux Firebase : jeton fixe, permission choisie par le test, notifications envoyées à la main.
+class FauxPush implements ServicePush {
+  FauxPush({this.permission = true, this.jetonActuel = 'fcm-jeton-1'});
+
+  bool permission;
+  String? jetonActuel;
+  int permissionsDemandees = 0;
+  MessagePush? depart;
+  final _jetons = StreamController<String>.broadcast();
+  final _recues = StreamController<MessagePush>.broadcast();
+  final _touchees = StreamController<MessagePush>.broadcast();
+
+  void nouveauJeton(String j) {
+    jetonActuel = j;
+    _jetons.add(j);
+  }
+
+  void recevoir(Map<String, String> donnees) => _recues.add(MessagePush(donnees));
+  void toucher(Map<String, String> donnees) => _touchees.add(MessagePush(donnees));
+
+  @override
+  bool get disponible => true;
+  @override
+  Future<String?> jeton() async => jetonActuel;
+  @override
+  Stream<String> get nouveauxJetons => _jetons.stream;
+  @override
+  Future<bool> demanderPermission() async {
+    permissionsDemandees++;
+    return permission;
+  }
+
+  @override
+  Stream<MessagePush> get recues => _recues.stream;
+  @override
+  Stream<MessagePush> get touchees => _touchees.stream;
+  @override
+  Future<MessagePush?> messageDeDepart() async {
+    final m = depart;
+    depart = null;
+    return m;
+  }
 }

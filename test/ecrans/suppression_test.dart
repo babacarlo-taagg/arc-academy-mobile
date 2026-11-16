@@ -57,6 +57,8 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).last,
     );
+    await tester.ensureVisible(find.byKey(const Key('bouton_supprimer_mon_compte')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('bouton_supprimer_mon_compte')));
     await attendre(tester);
     expect(find.text('Pour confirmer, tape SUPPRIMER'), findsOneWidget);

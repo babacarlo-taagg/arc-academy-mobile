@@ -526,3 +526,173 @@ class Organisation {
   factory Organisation.fromJson(Map<String, dynamic> j) =>
       Organisation(id: _int(j['id']), nom: j['nom'] as String? ?? '', pays: j['pays'] as String?);
 }
+
+// ───────── Notifications (contrat 0.4.0) ─────────
+
+/// Canaux et sujets des notifications (clés du contrat).
+abstract final class CanalNotification {
+  static const email = 'email';
+  static const push = 'push';
+  static const whatsapp = 'whatsapp';
+}
+
+abstract final class SujetNotification {
+  static const cours = 'cours';
+  static const communaute = 'communaute';
+  static const talent = 'talent';
+  static const nouveautes = 'nouveautes';
+}
+
+class CanalDisponible {
+  const CanalDisponible({required this.cle, required this.libelle, this.disponible = true});
+  final String cle;
+  final String libelle;
+  final bool disponible;
+
+  factory CanalDisponible.fromJson(Map<String, dynamic> j) => CanalDisponible(
+    cle: '${j['cle']}',
+    libelle: j['libelle'] as String? ?? '${j['cle']}',
+    disponible: j['disponible'] != false,
+  );
+  Map<String, dynamic> toJson() => {'cle': cle, 'libelle': libelle, 'disponible': disponible};
+}
+
+class PreferenceNotification {
+  const PreferenceNotification({required this.canal, required this.sujet, required this.actif});
+  final String canal;
+  final String sujet;
+  final bool actif;
+
+  factory PreferenceNotification.fromJson(Map<String, dynamic> j) =>
+      PreferenceNotification(canal: '${j['canal']}', sujet: '${j['sujet']}', actif: j['actif'] == true);
+  Map<String, dynamic> toJson() => {'canal': canal, 'sujet': sujet, 'actif': actif};
+}
+
+/// Ce que l'apprenant veut recevoir, par canal et par sujet.
+class PreferencesNotifications {
+  const PreferencesNotifications({this.canaux = const [], this.sujets = const [], this.preferences = const []});
+
+  final List<CanalDisponible> canaux;
+  final List<Choix> sujets;
+  final List<PreferenceNotification> preferences;
+
+  bool actif(String canal, String sujet) =>
+      preferences.where((p) => p.canal == canal && p.sujet == sujet).firstOrNull?.actif ?? false;
+
+  /// Les mêmes préférences, avec ces lignes changées (ou ajoutées).
+  PreferencesNotifications avec(List<PreferenceNotification> changements) {
+    final lignes = [...preferences];
+    for (final c in changements) {
+      final i = lignes.indexWhere((p) => p.canal == c.canal && p.sujet == c.sujet);
+      if (i >= 0) {
+        lignes[i] = c;
+      } else {
+        lignes.add(c);
+      }
+    }
+    return PreferencesNotifications(canaux: canaux, sujets: sujets, preferences: lignes);
+  }
+
+  factory PreferencesNotifications.fromJson(Map<String, dynamic> j) => PreferencesNotifications(
+    canaux: [
+      for (final c in (j['canaux'] as List? ?? const [])) CanalDisponible.fromJson((c as Map).cast<String, dynamic>()),
+    ],
+    sujets: [for (final s in (j['sujets'] as List? ?? const [])) Choix.fromJson((s as Map).cast<String, dynamic>())],
+    preferences: [
+      for (final p in (j['preferences'] as List? ?? const []))
+        PreferenceNotification.fromJson((p as Map).cast<String, dynamic>()),
+    ],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'canaux': [for (final c in canaux) c.toJson()],
+    'sujets': [for (final s in sujets) s.toJson()],
+    'preferences': [for (final p in preferences) p.toJson()],
+  };
+}
+
+/// Écran à ouvrir depuis un message : `cours` et `lecon` dans l'appli, le reste dans le navigateur (`url`).
+class CibleNotification {
+  const CibleNotification({required this.type, this.id, this.coursId, this.url});
+  final String type;
+  final int? id;
+  final int? coursId;
+  final String? url;
+
+  /// Chemin de l'écran de l'appli, ou null s'il faut ouvrir `url`.
+  String? get route => switch (type) {
+    'cours' when id != null => '/cours/$id',
+    'lecon' when id != null && coursId != null => '/lecon/$coursId/$id',
+    _ => null,
+  };
+
+  factory CibleNotification.fromJson(Map<String, dynamic> j) => CibleNotification(
+    type: '${j['type']}',
+    id: j['id'] == null ? null : _int(j['id']),
+    coursId: j['coursId'] == null ? null : _int(j['coursId']),
+    url: j['url'] as String?,
+  );
+  Map<String, dynamic> toJson() => {'type': type, 'id': id, 'coursId': coursId, 'url': url};
+}
+
+class NotificationArc {
+  const NotificationArc({
+    required this.id,
+    required this.titre,
+    required this.texte,
+    required this.sujet,
+    required this.envoyeeLe,
+    this.lue = false,
+    this.cible,
+  });
+
+  final int id;
+  final String titre;
+  final String texte;
+  final String sujet;
+  final DateTime envoyeeLe;
+  final bool lue;
+  final CibleNotification? cible;
+
+  NotificationArc commeLue() =>
+      NotificationArc(id: id, titre: titre, texte: texte, sujet: sujet, envoyeeLe: envoyeeLe, lue: true, cible: cible);
+
+  factory NotificationArc.fromJson(Map<String, dynamic> j) => NotificationArc(
+    id: _int(j['id']),
+    titre: j['titre'] as String? ?? '',
+    texte: j['texte'] as String? ?? '',
+    sujet: j['sujet'] as String? ?? '',
+    envoyeeLe: DateTime.tryParse('${j['envoyeeLe']}')?.toUtc() ?? DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+    lue: j['lue'] == true,
+    cible: j['cible'] is Map ? CibleNotification.fromJson((j['cible'] as Map).cast<String, dynamic>()) : null,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'titre': titre,
+    'texte': texte,
+    'sujet': sujet,
+    'envoyeeLe': envoyeeLe.toUtc().toIso8601String(),
+    'lue': lue,
+    'cible': cible?.toJson(),
+  };
+}
+
+class BoiteDeReception {
+  const BoiteDeReception({this.notifications = const [], this.nonLues = 0});
+  final List<NotificationArc> notifications;
+  final int nonLues;
+
+  factory BoiteDeReception.fromJson(Map<String, dynamic> j) => BoiteDeReception(
+    notifications: [
+      for (final n in (j['notifications'] as List? ?? const []))
+        NotificationArc.fromJson((n as Map).cast<String, dynamic>()),
+    ],
+    nonLues: _int(j['nonLues']),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'notifications': [for (final n in notifications) n.toJson()],
+    'nonLues': nonLues,
+  };
+}

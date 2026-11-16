@@ -98,6 +98,61 @@ class FauxServeur {
     {'id': 7, 'nom': 'District sanitaire de Parakou', 'pays': 'BJ'},
   ];
 
+  // ───────── Notifications (0.4.0) ─────────
+
+  /// Jetons reçus par PUT /appareil/push, et nombre de DELETE.
+  final List<Map<String, dynamic>> jetonsPush = [];
+  int retraitsJetonPush = 0;
+
+  /// Messages de la boîte de réception (le serveur calcule `nonLues`).
+  List<Map<String, dynamic>> messages = [];
+  final List<List<int>> idsLus = [];
+
+  /// Préférences : une ligne par canal et par sujet ; WhatsApp indisponible par défaut.
+  bool whatsappDisponible = false;
+  final Map<String, bool> preferences = {'email:cours': true};
+  final List<List<Map<String, dynamic>>> modificationsPreferences = [];
+
+  /// Simule une coupure pour les notifications.
+  bool notificationsInjoignables = false;
+
+  static Map<String, dynamic> message(int id, {bool lue = false, Map<String, dynamic>? cible}) => {
+    'id': id,
+    'titre': 'Ton cours t\'attend',
+    'texte': 'Il te reste 2 leçons pour terminer « Pharmacovigilance ».',
+    'sujet': 'cours',
+    'envoyeeLe': '2026-11-20T09:00:00Z',
+    'lue': lue,
+    'cible': cible,
+  };
+
+  Map<String, dynamic> _preferences(String langue) {
+    final en = langue == 'en';
+    const canaux = ['email', 'push', 'whatsapp'];
+    const sujets = ['cours', 'communaute', 'talent', 'nouveautes'];
+    return {
+      'canaux': [
+        {'cle': 'email', 'libelle': en ? 'Email' : 'E-mail', 'disponible': true},
+        {
+          'cle': 'push',
+          'libelle': en ? 'Notification on the phone' : 'Notification sur le téléphone',
+          'disponible': true,
+        },
+        {'cle': 'whatsapp', 'libelle': 'WhatsApp', 'disponible': whatsappDisponible},
+      ],
+      'sujets': [
+        {'cle': 'cours', 'libelle': en ? 'Reminders about my courses' : 'Rappels de mes cours'},
+        {'cle': 'communaute', 'libelle': en ? 'Community and forums' : 'Communauté et forums'},
+        {'cle': 'talent', 'libelle': en ? 'Talent Hub opportunities' : 'Opportunités du Talent Hub'},
+        {'cle': 'nouveautes', 'libelle': en ? 'New courses and events' : 'Nouvelles formations et événements'},
+      ],
+      'preferences': [
+        for (final c in canaux)
+          for (final su in sujets) {'canal': c, 'sujet': su, 'actif': preferences['$c:$su'] ?? false},
+      ],
+    };
+  }
+
   /// Simule une coupure : les requêtes vers le profil échouent sans réponse.
   bool profilInjoignable = false;
   final Map<int, Map<String, dynamic>> manifestes = {};
@@ -117,7 +172,9 @@ class FauxServeur {
   Future<void> _json(HttpResponse r, int statut, Object? corps) async {
     r.statusCode = statut;
     if (corps != null) {
-      r.headers.contentType = statut >= 400 ? ContentType('application', 'problem+json') : ContentType.json;
+      r.headers.contentType = statut >= 400
+          ? ContentType('application', 'problem+json', charset: 'utf-8')
+          : ContentType.json;
       r.write(jsonEncode(corps));
     }
     await r.close();
@@ -190,6 +247,59 @@ class FauxServeur {
               if ((o['nom'] as String).toLowerCase().contains(recherche.toLowerCase())) o,
           ],
         });
+      }
+      if (const [
+        '/appareil/push',
+        '/notifications',
+        '/notifications/lues',
+        '/moi/preferences-notifications',
+      ].contains(chemin)) {
+        if (notificationsInjoignables) {
+          final socket = await r.detachSocket(writeHeaders: false);
+          socket.destroy();
+          return;
+        }
+        final brut = await utf8.decodeStream(q);
+        final corps = brut.isEmpty ? const <String, dynamic>{} : (jsonDecode(brut) as Map).cast<String, dynamic>();
+        final langue = q.headers.value('accept-language') ?? 'fr';
+        if (chemin == '/appareil/push' && q.method == 'PUT') {
+          jetonsPush.add(corps);
+          return await _json(r, 204, null);
+        }
+        if (chemin == '/appareil/push' && q.method == 'DELETE') {
+          retraitsJetonPush++;
+          return await _json(r, 204, null);
+        }
+        if (chemin == '/notifications') {
+          return await _json(r, 200, {
+            'notifications': messages,
+            'nonLues': messages.where((m) => m['lue'] != true).length,
+          });
+        }
+        if (chemin == '/notifications/lues') {
+          final ids = [for (final i in corps['ids'] as List) (i as num).toInt()];
+          idsLus.add(ids);
+          for (final m in messages) {
+            if (ids.contains(m['id'])) m['lue'] = true;
+          }
+          return await _json(r, 204, null);
+        }
+        if (q.method == 'PUT') {
+          final lignes = [for (final l in corps['preferences'] as List) (l as Map).cast<String, dynamic>()];
+          if (lignes.any((l) => l['canal'] == 'whatsapp' && l['actif'] == true && !whatsappDisponible)) {
+            return await _json(r, 400, {
+              'title': 'Données invalides',
+              'status': 400,
+              'code': 'champ_invalide',
+              'champs': {'whatsapp': 'indisponible'},
+            });
+          }
+          modificationsPreferences.add(lignes);
+          for (final l in lignes) {
+            preferences['${l['canal']}:${l['sujet']}'] = l['actif'] == true;
+          }
+        }
+        return await _json(r, 200, _preferences(langue));
       }
       if (chemin == '/moi/suppression') {
         final brut = await utf8.decodeStream(q);

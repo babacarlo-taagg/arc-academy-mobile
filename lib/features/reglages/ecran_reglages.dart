@@ -41,6 +41,17 @@ class EcranReglages extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 Card(
+                  child: ListTile(
+                    key: const Key('lien_notifications'),
+                    leading: const Icon(Icons.notifications_none_rounded, size: 30),
+                    title: Text(t.reglagesNotifications, style: style.titleMedium),
+                    subtitle: Text(t.reglagesNotificationsAide),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () => context.push('/reglages/notifications'),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Card(
                   key: const Key('donnees_consommees'),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -177,13 +188,18 @@ class EcranReglages extends ConsumerWidget {
     );
     if (!(ok ?? false)) return;
     final ouvert = ref.read(profilOuvertProvider);
+    final dernier = (await ref.read(servicesProvider).profils.profils()).length <= 1;
     try {
       await ouvert?.moteur.envoyer();
+      // Dernier profil du téléphone : plus aucune notification ne doit arriver ici.
+      if (dernier) await ouvert?.notifications.retirerJeton();
       await ouvert?.api.seDeconnecter();
     } catch (_) {
       // hors ligne : la session expirera d'elle-même côté serveur
     }
+    // L'écran peut disparaître pendant l'effacement (le routeur quitte les écrans du profil) : on garde le routeur.
+    final routeur = context.mounted ? GoRouter.of(context) : null;
     await ref.read(profilOuvertProvider.notifier).effacer();
-    if (context.mounted) context.go('/');
+    routeur?.go('/');
   }
 }

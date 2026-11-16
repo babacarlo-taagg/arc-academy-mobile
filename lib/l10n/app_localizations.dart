@@ -1069,6 +1069,114 @@ abstract class AppLocalizations {
   /// In fr, this message translates to:
   /// **'Accord retiré : ARC ne t\'écrira plus sur WhatsApp.'**
   String get whatsappAccordRetire;
+
+  /// No description provided for @boiteTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mes messages'**
+  String get boiteTitre;
+
+  /// No description provided for @boiteVide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas encore de message d\'ARC.'**
+  String get boiteVide;
+
+  /// No description provided for @boiteToutLu.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout marquer comme lu'**
+  String get boiteToutLu;
+
+  /// No description provided for @boiteNonLu.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non lu'**
+  String get boiteNonLu;
+
+  /// No description provided for @notifsTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get notifsTitre;
+
+  /// No description provided for @notifsIntro.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisis ce que tu reçois, et comment.'**
+  String get notifsIntro;
+
+  /// No description provided for @notifsReseau.
+  ///
+  /// In fr, this message translates to:
+  /// **'Il faut du réseau une fois pour voir tes choix.'**
+  String get notifsReseau;
+
+  /// No description provided for @notifsEnAttente.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tes changements partiront au retour du réseau.'**
+  String get notifsEnAttente;
+
+  /// No description provided for @notifsWhatsappIndisponible.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pour WhatsApp, ajoute ton numéro et ton accord dans Mon profil.'**
+  String get notifsWhatsappIndisponible;
+
+  /// No description provided for @notifsPushIndisponible.
+  ///
+  /// In fr, this message translates to:
+  /// **'Pas disponible dans cette version de l\'appli.'**
+  String get notifsPushIndisponible;
+
+  /// No description provided for @notifsPermissionRefusee.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autorise les notifications d\'ARC Academy dans les réglages du téléphone.'**
+  String get notifsPermissionRefusee;
+
+  /// No description provided for @pushPropositionTitre.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recevoir les rappels de tes cours sur ce téléphone ?'**
+  String get pushPropositionTitre;
+
+  /// No description provided for @pushPropositionAide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une fois par semaine au plus. Tu peux changer d\'avis dans Réglages.'**
+  String get pushPropositionAide;
+
+  /// No description provided for @pushOui.
+  ///
+  /// In fr, this message translates to:
+  /// **'Oui'**
+  String get pushOui;
+
+  /// No description provided for @pushNon.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non merci'**
+  String get pushNon;
+
+  /// No description provided for @pushActive.
+  ///
+  /// In fr, this message translates to:
+  /// **'C\'est noté : tu recevras tes rappels ici.'**
+  String get pushActive;
+
+  /// No description provided for @reglagesNotifications.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get reglagesNotifications;
+
+  /// No description provided for @reglagesNotificationsAide.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappels et messages d\'ARC'**
+  String get reglagesNotificationsAide;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

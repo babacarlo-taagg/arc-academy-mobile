@@ -543,4 +543,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsappAccordRetire => 'Consent withdrawn: ARC will no longer write to you on WhatsApp.';
+
+  @override
+  String get boiteTitre => 'My messages';
+
+  @override
+  String get boiteVide => 'No message from ARC yet.';
+
+  @override
+  String get boiteToutLu => 'Mark all as read';
+
+  @override
+  String get boiteNonLu => 'Unread';
+
+  @override
+  String get notifsTitre => 'Notifications';
+
+  @override
+  String get notifsIntro => 'Choose what you receive, and how.';
+
+  @override
+  String get notifsReseau => 'You need a connection once to see your choices.';
+
+  @override
+  String get notifsEnAttente => 'Your changes will be sent when you are back online.';
+
+  @override
+  String get notifsWhatsappIndisponible => 'For WhatsApp, add your number and your consent in My profile.';
+
+  @override
+  String get notifsPushIndisponible => 'Not available in this version of the app.';
+
+  @override
+  String get notifsPermissionRefusee => 'Allow ARC Academy notifications in your phone settings.';
+
+  @override
+  String get pushPropositionTitre => 'Get reminders about your courses on this phone?';
+
+  @override
+  String get pushPropositionAide => 'At most once a week. You can change your mind in Settings.';
+
+  @override
+  String get pushOui => 'Yes';
+
+  @override
+  String get pushNon => 'No thanks';
+
+  @override
+  String get pushActive => 'Done: you will get your reminders here.';
+
+  @override
+  String get reglagesNotifications => 'Notifications';
+
+  @override
+  String get reglagesNotificationsAide => 'Reminders and messages from ARC';
 }
