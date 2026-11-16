@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: API ARC Academy — appli mobile
-  version: 0.2.0
+  version: 0.3.0
   summary: Contrat entre l'appli ARC Academy Mobile et la base Odoo Community d'ARC (module arc_mobile_api).
   description: |
     Source unique de vérité pour l'appli mobile (Flutter, Android et iOS) et pour le module Odoo `arc_mobile_api`.
@@ -32,6 +32,11 @@ info:
     - **Suppression de compte** (0.2.0, exigée par Google Play et l'App Store) : l'apprenant demande dans l'appli la
       suppression de son compte et de ses données (`demanderSuppression`). ARC traite la demande ; dès la demande,
       tous ses profils sont marqués à effacer sur tous ses téléphones (`401 profil_efface` au passage suivant).
+    - **Profil apprenant progressif** (0.3.0, module Odoo `arc_profil`) : mêmes champs et mêmes règles que sur le site.
+      Le serveur dit quelles questions poser maintenant (`questionsAPoser`, 3 au plus) : pays, métier et langue tant
+      qu'ils manquent (écran obligatoire à la première connexion) ; l'institution, son type et le niveau du système
+      de santé après la première inscription à un cours ; le sexe (facultatif) après le premier certificat. Une
+      question facultative laissée sans réponse est notée (`ignorer`) et n'est plus reposée.
     - Identifiants des cours et leçons : les identifiants Odoo (`slide.channel`, `slide.slide`), déjà visibles
       dans les adresses du site ; l'accès est toujours vérifié côté serveur (cohortes et inscriptions).
   contact:
@@ -186,6 +191,97 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SuppressionEnregistree' }
+        '400': { $ref: '#/components/responses/Invalide' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  /moi/profil:
+    get:
+      tags: [Profil]
+      operationId: lireProfil
+      summary: Mon profil ARC (et les questions à poser maintenant)
+      parameters:
+        - $ref: '#/components/parameters/Langue'
+      responses:
+        '200':
+          description: Profil.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfilApprenant' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+    patch:
+      tags: [Profil]
+      operationId: modifierProfil
+      summary: Compléter ou modifier mon profil
+      description: |
+        Seuls les champs envoyés changent. Le pays et le métier ne peuvent pas être vidés. Un accord WhatsApp est
+        enregistré avec la version du texte affiché (`whatsappAccordVersion`), daté, et révocable (`false`).
+        Rejouer la même modification ne change rien (sans risque depuis la file hors ligne).
+      parameters:
+        - $ref: '#/components/parameters/Langue'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModificationProfil' }
+            example: { pays: BJ, metier: infirmier, langue: fr }
+      responses:
+        '200':
+          description: Profil à jour.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProfilApprenant' }
+        '400': { $ref: '#/components/responses/Invalide' }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  /referentiels:
+    get:
+      tags: [Profil]
+      operationId: lireReferentiels
+      summary: Listes de choix du profil (gardées sur le téléphone)
+      description: |
+        Pays, métiers, types d'institution, niveaux, sexes et langues, avec les libellés dans la langue demandée.
+        `version` change seulement si une liste change : l'appli les garde hors ligne et ne les redemande que si la
+        version diffère (`If-None-Match` → `304`).
+      parameters:
+        - $ref: '#/components/parameters/Langue'
+        - name: If-None-Match
+          in: header
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listes.
+          headers:
+            ETag: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Referentiels' }
+        '304': { description: La version locale est à jour. }
+        '401': { $ref: '#/components/responses/NonAuthentifie' }
+
+  /organisations:
+    get:
+      tags: [Profil]
+      operationId: chercherOrganisations
+      summary: Chercher son institution parmi celles connues d'ARC
+      description: 20 résultats au plus ; il faut au moins 3 caractères. Si rien ne convient, l'appli envoie le nom tapé (`institutionNom`).
+      parameters:
+        - name: recherche
+          in: query
+          required: true
+          schema: { type: string, minLength: 3, maxLength: 80 }
+      responses:
+        '200':
+          description: Institutions trouvées.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [organisations]
+                properties:
+                  organisations:
+                    type: array
+                    items: { $ref: '#/components/schemas/Organisation' }
         '400': { $ref: '#/components/responses/Invalide' }
         '401': { $ref: '#/components/responses/NonAuthentifie' }
 
@@ -384,6 +480,13 @@ components:
       required: true
       schema: { type: integer }
 
+    Langue:
+      name: Accept-Language
+      in: header
+      required: false
+      description: Langue des libellés (`fr` par défaut, `en`).
+      schema: { type: string, enum: [fr, en], default: fr }
+
   responses:
     Invalide:
       description: Requête invalide.
@@ -499,6 +602,105 @@ components:
       example:
         demandeLe: '2026-10-24T09:00:00Z'
         message: Ta demande est enregistrée. ARC supprimera ton compte et tes données sous 30 jours.
+
+    ChampProfil:
+      type: string
+      enum: [pays, metier, langue, institution, typeInstitution, niveau, sexe]
+    ProfilApprenant:
+      type: object
+      required: [completude, questionsAPoser, whatsappAccord]
+      properties:
+        pays: { type: [string, 'null'], description: Code ISO à 2 lettres. }
+        metier: { type: [string, 'null'], description: Clé de `Referentiels.metiers`. }
+        langue: { type: [string, 'null'], enum: [fr, en, null] }
+        institution:
+          type: [object, 'null']
+          description: Institution connue d'ARC (`id`) ou nom tapé par l'apprenant (`id` nul).
+          properties:
+            id: { type: [integer, 'null'] }
+            nom: { type: string }
+        typeInstitution: { type: [string, 'null'] }
+        niveau: { type: [string, 'null'] }
+        sexe: { type: [string, 'null'] }
+        whatsapp: { type: [string, 'null'], description: Format international (+221771234567). }
+        whatsappAccord: { type: boolean }
+        whatsappAccordVersion: { type: [string, 'null'], description: Version du texte d'accord en vigueur (à afficher et renvoyer). }
+        whatsappTexte: { type: string, description: "Texte d'accord en vigueur, dans la langue demandée." }
+        completude: { type: integer, minimum: 0, maximum: 100, description: "Pays, métier, langue, institution, type, niveau." }
+        questionsAPoser:
+          type: array
+          maxItems: 3
+          description: Questions à poser maintenant, dans l'ordre. Vide = rien à demander.
+          items: { $ref: '#/components/schemas/ChampProfil' }
+        obligatoires:
+          type: array
+          description: Parmi `questionsAPoser`, celles sans lesquelles l'appli ne peut pas continuer (pays et métier).
+          items: { $ref: '#/components/schemas/ChampProfil' }
+      example:
+        pays: BJ
+        metier: infirmier
+        langue: fr
+        institution: { id: null, nom: Centre de santé de Kolda }
+        typeInstitution: null
+        niveau: null
+        sexe: null
+        whatsapp: null
+        whatsappAccord: false
+        whatsappAccordVersion: whatsapp-2026-11-v1
+        whatsappTexte: J'accepte qu'ARC Academy m'écrive sur WhatsApp à ce numéro…
+        completude: 67
+        questionsAPoser: [typeInstitution, niveau]
+        obligatoires: []
+    ModificationProfil:
+      type: object
+      properties:
+        pays: { type: string, pattern: '^[A-Z]{2}$' }
+        metier: { type: string }
+        langue: { type: string, enum: [fr, en] }
+        institutionId: { type: [integer, 'null'], description: Une institution de `/organisations`. }
+        institutionNom: { type: [string, 'null'], maxLength: 160, description: Nom tapé si l'institution n'est pas dans la liste. }
+        typeInstitution: { type: [string, 'null'] }
+        niveau: { type: [string, 'null'] }
+        sexe: { type: [string, 'null'] }
+        whatsapp: { type: [string, 'null'] }
+        whatsappAccord: { type: boolean }
+        whatsappAccordVersion: { type: string, description: Obligatoire quand `whatsappAccord` est vrai. }
+        ignorer:
+          type: array
+          description: Questions facultatives que l'apprenant a choisi de passer (ne plus les reposer).
+          items: { $ref: '#/components/schemas/ChampProfil' }
+    Choix:
+      type: object
+      required: [cle, libelle]
+      properties:
+        cle: { type: string }
+        libelle: { type: string }
+    Referentiels:
+      type: object
+      required: [version, pays, metiers, typesInstitution, niveaux, sexes, langues]
+      properties:
+        version: { type: string }
+        pays: { type: array, items: { $ref: '#/components/schemas/Choix' }, description: "`cle` = code ISO." }
+        metiers: { type: array, items: { $ref: '#/components/schemas/Choix' } }
+        typesInstitution: { type: array, items: { $ref: '#/components/schemas/Choix' } }
+        niveaux: { type: array, items: { $ref: '#/components/schemas/Choix' } }
+        sexes: { type: array, items: { $ref: '#/components/schemas/Choix' } }
+        langues: { type: array, items: { $ref: '#/components/schemas/Choix' } }
+      example:
+        version: 3f9a1c
+        pays: [{ cle: BJ, libelle: Bénin }, { cle: SN, libelle: Sénégal }]
+        metiers: [{ cle: infirmier, libelle: Infirmier(ère) }, { cle: sage_femme, libelle: Sage-femme }]
+        typesInstitution: [{ cle: centre_sante, libelle: Centre de santé }]
+        niveaux: [{ cle: district, libelle: District }]
+        sexes: [{ cle: femme, libelle: Femme }, { cle: homme, libelle: Homme }, { cle: ne_repond_pas, libelle: Préfère ne pas répondre }]
+        langues: [{ cle: fr, libelle: Français }, { cle: en, libelle: English }]
+    Organisation:
+      type: object
+      required: [id, nom]
+      properties:
+        id: { type: integer }
+        nom: { type: string }
+        pays: { type: [string, 'null'] }
 
     Formation:
       type: object
