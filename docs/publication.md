@@ -19,9 +19,45 @@ Jamais dans le dépôt, jamais dans une conversation.
 | `APP_STORE_CONNECT_ISSUER_ID` | identifiant de l'émetteur (Issuer ID) | idem |
 | `APP_STORE_CONNECT_KEY_P8_BASE64` | le fichier `AuthKey_XXXX.p8`, encodé en base64 | idem |
 | `APPLE_TEAM_ID` | identifiant d'équipe Apple (10 caractères) | idem |
+| `FIREBASE_PROJECT_ID` | identifiant du projet Firebase (ex. `arc-academy-12345`) | notifications sur le téléphone |
+| `FIREBASE_SENDER_ID` | numéro de l'expéditeur (« Project number », 12 chiffres) | idem |
+| `FIREBASE_API_KEY_ANDROID` | clé de l'appli Android dans Firebase (commence par `AIza`) | idem |
+| `FIREBASE_APP_ID_ANDROID` | identifiant de l'appli Android dans Firebase (`1:…:android:…`) | idem |
+| `FIREBASE_API_KEY_IOS` | clé de l'appli iOS dans Firebase (commence par `AIza`) | idem |
+| `FIREBASE_APP_ID_IOS` | identifiant de l'appli iOS dans Firebase (`1:…:ios:…`) | idem |
 
 Sans ces secrets, la publication marche quand même : l'appli Android est signée avec la clé de développement (bonne
 pour le pilote, refusée par Google Play) et l'iOS est seulement compilé. Le résumé de chaque exécution le signale.
+
+### Les notifications (Firebase), une seule fois
+
+Les notifications sur le téléphone passent par **Firebase Cloud Messaging** (Google, gratuit). Sans les secrets
+`FIREBASE_*`, l'appli est construite sans elles : tout le reste marche, et les messages d'ARC arrivent quand même
+dans « Mes messages » à chaque passage réseau.
+
+1. <https://console.firebase.google.com> › **Ajouter un projet** : nom « ARC Academy », sans Google Analytics.
+2. Dans le projet : **Ajouter une appli › Android**, nom du paquet `org.africaresourcecentre.academy`.
+   Ne pas télécharger `google-services.json` (inutile : les réglages passent par les secrets). Terminer.
+3. **Ajouter une appli › iOS**, identifiant du bundle `org.africaresourcecentre.academy`. Ne pas télécharger
+   `GoogleService-Info.plist`. Terminer.
+4. Roue dentée › **Paramètres du projet › Général** : on y lit l'**ID du projet** (`FIREBASE_PROJECT_ID`) et le
+   **Numéro du projet** (`FIREBASE_SENDER_ID`) ; plus bas, pour chaque appli, l'**ID d'application**
+   (`FIREBASE_APP_ID_ANDROID`, `FIREBASE_APP_ID_IOS`). La **clé API Web** ne sert pas : la clé de chaque appli est
+   dans le fichier qu'on n'a pas téléchargé — cliquer sur l'appli › `google-services.json` (Android, valeur
+   `current_key`) ou `GoogleService-Info.plist` (iOS, valeur `API_KEY`), recopier la clé, puis supprimer le fichier.
+5. Pour l'iPhone : developer.apple.com › Certificates, IDs & Profiles › **Keys › +** : nom « ARC Academy
+   notifications », cocher **Apple Push Notifications service (APNs)**, télécharger le fichier `.p8` (une seule fois)
+   et noter son **Key ID**. Dans Firebase › Paramètres du projet › **Cloud Messaging** › appli iOS › **Clé
+   d'authentification APNs › Importer** : le fichier `.p8`, le Key ID et le Team ID. Supprimer ensuite le `.p8` de
+   l'ordinateur.
+6. Dans developer.apple.com › **Identifiers** › `org.africaresourcecentre.academy` : cocher **Push Notifications**
+   et enregistrer (l'appli le demande désormais).
+7. Côté serveur (Odoo), le **compte de service** Firebase (Paramètres du projet › Comptes de service › Générer une
+   nouvelle clé privée) se saisit dans Odoo, jamais dans GitHub ni dans une conversation : voir la documentation du
+   module `arc_notifications` dans le dépôt `arc-academy-odoo`.
+
+Ces valeurs (sauf la clé privée du compte de service) ne sont pas vraiment secrètes — elles finissent dans l'appli —
+mais on les garde dans les secrets pour qu'elles ne soient pas dans le dépôt.
 
 ## 2. Lancer une publication
 

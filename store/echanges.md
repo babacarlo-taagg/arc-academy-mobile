@@ -236,3 +236,24 @@ vérifier en plus : la nouvelle clé doit être une clé **d'équipe** (Intégra
 d'équipe), pas une clé individuelle, avec l'accès **Admin** ; et l'Issuer ID est le même pour toutes les clés
 d'équipe. Si la prochaine exécution échoue encore avec la même erreur, je passerai à une signature « manuelle »
 (certificat de distribution et profil créés une fois et rangés dans les secrets) et je le dirai ici.
+
+## Note session code — 16 novembre 2026 — notifications (livraison 3) : à faire côté stores
+L'appli reçoit maintenant des **notifications** (Firebase Cloud Messaging) : rappels de cours, messages d'ARC, avec
+une boîte « Mes messages » et Réglages › Notifications. Rien ne change pour l'apprenant tant que les secrets
+`FIREBASE_*` ne sont pas créés (voir `docs/publication.md` § « Les notifications »). À mettre à jour **avant le
+prochain envoi qui contient Firebase** :
+- **Google Play › Sécurité des données** : déclarer **Identifiants de l'appareil ou autres** (jeton de notification
+  Firebase), collectés, **non partagés**, finalités **Fonctionnement de l'appli** et **Communications du
+  développeur** ; obligatoires pour les notifications, l'apprenant peut les couper. La permission « Afficher des
+  notifications » (Android 13+) est ajoutée par Firebase et demandée dans l'appli seulement si l'apprenant dit oui.
+- **App Store › Confidentialité de l'appli** : ajouter **Identifiant d'appareil** (Device ID), lié à l'utilisateur,
+  pas de suivi, finalité **Fonctionnalité de l'appli**. L'appli demande le droit **Push Notifications**
+  (`aps-environment` = production) : Babacar doit cocher **Push Notifications** sur l'identifiant
+  `org.africaresourcecentre.academy` (developer.apple.com › Identifiers) et créer la **clé APNs** à importer dans
+  Firebase (étapes 5 et 6 de `docs/publication.md`). Sans la case cochée, l'export signé peut échouer avec une erreur
+  de profil (« Push Notifications capability »).
+- **Captures** : 05 (Mes formations : cloche des messages) et 08 (Réglages : entrée Notifications) ont changé dans
+  `store/android/fr-FR/captures/` et `store/ios/fr-FR/captures/` : à remplacer dans Play Console et App Store Connect.
+  (La capture 08 avait déjà changé avec la livraison 2 ; c'est la version de ce commit qui compte.)
+- Notes de version (fr) proposées : « Nouveau : Mes messages et les rappels de tes cours sur ton téléphone, si tu
+  le veux. Tu choisis ce que tu reçois dans Réglages › Notifications. »
